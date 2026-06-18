@@ -1,0 +1,43 @@
+<RCC>
+    <qresource prefix="/">
+        <file>map.html</file>
+        <file>leaflet/leaflet.min.js</file>
+        <file>leaflet/leaflet.min.css</file>
+        <file>leaflet/marker-icon.png</file>
+        <file>leaflet/marker-icon-2x.png</file>
+        <file>leaflet/marker-shadow.png</file>
+    </qresource>
+
+    <!-- Кольорові іконки (для значка застосунку) -->
+    <qresource prefix="/icons/color">
+        <file alias="16.png">../icons/icon-16x16.png</file>
+        <file alias="24.png">../icons/icon-24x24.png</file>
+        <file alias="32.png">../icons/icon-32x32.png</file>
+        <file alias="64.png">../icons/icon-64x64.png</file>
+        <file alias="128.png">../icons/icon-128x128.png</file>
+        <file alias="256.png">../icons/icon-256x256.png</file>
+        <file alias="512.png">../icons/icon-512x512.png</file>
+    </qresource>
+
+    <!-- Чорно-білі іконки (для трею, пріоритет чорного) -->
+    <qresource prefix="/icons/bw">
+        <file alias="16.png">../icons/icon-bw-16x16.png</file>
+        <file alias="24.png">../icons/icon-bw-24x24.png</file>
+        <file alias="32.png">../icons/icon-bw-32x32.png</file>
+        <file alias="64.png">../icons/icon-bw-64x64.png</file>
+        <file alias="128.png">../icons/icon-bw-128x128.png</file>
+        <file alias="256.png">../icons/icon-bw-256x256.png</file>
+        <file alias="512.png">../icons/icon-bw-512x512.png</file>
+    </qresource>
+
+    <!-- Біло-чорні іконки (для трею, пріоритет білого) -->
+    <qresource prefix="/icons/wb">
+        <file alias="16.png">../icons/icon-wb-16x16.png</file>
+        <file alias="24.png">../icons/icon-wb-24x24.png</file>
+        <file alias="32.png">../icons/icon-wb-32x32.png</file>
+        <file alias="64.png">../icons/icon-wb-64x64.png</file>
+        <file alias="128.png">../icons/icon-wb-128x128.png</file>
+        <file alias="256.png">../icons/icon-wb-256x256.png</file>
+        <file alias="512.png">../icons/icon-wb-512x512.png</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Map</title>
+  <link rel="stylesheet" href="qrc:/leaflet/leaflet.min.css"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #e8e8e8; }
+    #map { width: 100%; height: 100%; }
+    #status {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-family: sans-serif;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s;
+      z-index: 1000;
+    }
+    #status.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<div id="status"></div>
+<script src="qrc:/leaflet/leaflet.min.js"></script>
+<script>
+// Fix default marker icon paths for QRC loading
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl:       'qrc:/leaflet/marker-icon.png',
+  iconRetinaUrl: 'qrc:/leaflet/marker-icon-2x.png',
+  shadowUrl:     'qrc:/leaflet/marker-shadow.png',
+  iconSize:    [25, 41],
+  iconAnchor:  [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize:  [41, 41]
+});
+
+var map = L.map('map', { zoomControl: true }).setView([48.5, 31.5], 6);
+var marker   = null;
+var zoneRect = null;
+
+var baseLayers = {
+  streets: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  }),
+  ortho: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+    maxZoom: 19
+  }),
+  topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+    maxZoom: 17
+  })
+};
+
+// Labels overlay for layers that lack built-in labels (ortho)
+var orthoLabels = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  { attribution: '', maxZoom: 19 }
+);
+var orthoLabelsVisible = false;
+
+baseLayers.streets.addTo(map);
+var currentLayerKey = 'streets';
+var statusTimer = null;
+
+function showStatus(msg) {
+  var el = document.getElementById('status');
+  el.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(function() { el.classList.remove('visible'); }, 2000);
+}
+
+function clearCoordinate() {
+  if (marker)   { map.removeLayer(marker);   marker   = null; }
+  if (zoneRect) { map.removeLayer(zoneRect); zoneRect = null; }
+}
+
+function setCoordinate(lat, lon) {
+  clearCoordinate();
+  marker = L.marker([lat, lon]).addTo(map);
+  marker.bindPopup('<b>' + lat.toFixed(6) + ', ' + lon.toFixed(6) + '</b>');
+  map.setView([lat, lon], Math.max(map.getZoom(), 13));
+  showStatus(lat.toFixed(5) + ', ' + lon.toFixed(5));
+}
+
+function setZone(swLat, swLon, neLat, neLon) {
+  clearCoordinate();
+  var bounds = [[swLat, swLon], [neLat, neLon]];
+  zoneRect = L.rectangle(bounds, {
+    color: '#3d7cf5',
+    weight: 2,
+    fillColor: '#3d7cf5',
+    fillOpacity: 0.15
+  }).addTo(map);
+  var centerLat = (swLat + neLat) / 2;
+  var centerLon = (swLon + neLon) / 2;
+  marker = L.circleMarker([centerLat, centerLon], {
+    radius: 5,
+    color: '#3d7cf5',
+    fillColor: '#3d7cf5',
+    fillOpacity: 1,
+    weight: 2
+  }).addTo(map);
+  map.fitBounds(bounds, { padding: [40, 40] });
+  showStatus(centerLat.toFixed(5) + ', ' + centerLon.toFixed(5));
+}
+
+function setLayer(key) {
+  if (baseLayers[currentLayerKey]) map.removeLayer(baseLayers[currentLayerKey]);
+  if (orthoLabelsVisible) {
+    map.removeLayer(orthoLabels);
+    orthoLabelsVisible = false;
+  }
+  if (baseLayers[key]) {
+    baseLayers[key].addTo(map);
+    currentLayerKey = key;
+  }
+  if (key === 'ortho') {
+    orthoLabels.addTo(map);
+    orthoLabelsVisible = true;
+  }
+}
+</script>
+</body>
+</html>

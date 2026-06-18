@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=@PROJECT_VERSION@
+Type=Application
+Name=Степан
+GenericName=Coordinate Converter
+Comment=Конвертер систем координат (MGRS, DD, DMS, UTM, УСК-2000)
+Exec=stepan %u
+Icon=stepan
+Terminal=false
+Categories=Science;Geography;Utility;
+Keywords=coordinates;MGRS;UTM;GPS;map;координати;карта;
+StartupWMClass=Stepan
