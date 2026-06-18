@@ -229,14 +229,16 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: "1"
           QMAKE: /usr/bin/qmake6
         run: |
-          # Build a minimal AppDir with only stepan — cmake --install also installs
-          # GeographicLib utilities (CartConvert etc.) which confuse linuxdeploy
-          mkdir -p AppDir/usr/bin AppDir/usr/share/applications
-          cp build/stepan AppDir/usr/bin/
-          cp build/stepan.desktop AppDir/usr/share/applications/
+          # Minimal AppDir — only stepan, no GeographicLib utilities
+          # Icon must be named stepan.png to match Icon=stepan in the desktop file
+          mkdir -p AppDir/usr/bin \
+                   AppDir/usr/share/applications \
+                   AppDir/usr/share/icons/hicolor/256x256/apps
+          cp build/stepan                    AppDir/usr/bin/
+          cp build/stepan.desktop            AppDir/usr/share/applications/
+          cp icons/icon-256x256.png          AppDir/usr/share/icons/hicolor/256x256/apps/stepan.png
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
-            --icon-file icons/icon-256x256.png \
             --plugin qt \
             --output appimage
           find . -maxdepth 1 -name "*.AppImage" ! -name "linuxdeploy*" \
