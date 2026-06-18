@@ -1,10 +1,34 @@
 cmake_minimum_required(VERSION 3.20)
-project(Stepan VERSION 1.0.0 LANGUAGES CXX)
+project(Stepan VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
+
+# ── Version & build info ───────────────────────────────────────────────────────
+# User-visible version (may include pre-release suffix); used in metadata/UI
+set(APP_VERSION_FULL "0.1beta")
+
+find_package(Git QUIET)
+if(GIT_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+endif()
+if(NOT GIT_COMMIT_HASH OR GIT_COMMIT_HASH STREQUAL "")
+    set(GIT_COMMIT_HASH "unknown")
+endif()
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/cmake/version.h.in"
+    "${CMAKE_BINARY_DIR}/generated/version.h"
+    @ONLY
+)
 
 # ── Qt6 ──────────────────────────────────────────────────────────────────────
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets WebEngineWidgets WebChannel Network)
@@ -39,7 +63,7 @@ qt_add_executable(Stepan
     resources/resources.qrc
 )
 
-target_include_directories(Stepan PRIVATE src)
+target_include_directories(Stepan PRIVATE src "${CMAKE_BINARY_DIR}/generated")
 
 target_link_libraries(Stepan PRIVATE
     Qt6::Core
@@ -63,18 +87,23 @@ if(APPLE)
         MACOSX_BUNDLE                      TRUE
         MACOSX_BUNDLE_GUI_IDENTIFIER       "ua.ss-education.stepan"
         MACOSX_BUNDLE_BUNDLE_NAME          "Stepan"
-        MACOSX_BUNDLE_BUNDLE_VERSION       ${PROJECT_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+        MACOSX_BUNDLE_BUNDLE_VERSION       "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION_FULL}"
+        MACOSX_BUNDLE_LONG_VERSION_STRING  "Stepan ${APP_VERSION_FULL} (${GIT_COMMIT_HASH})"
+        MACOSX_BUNDLE_COPYRIGHT            "Copyright © 2026 Andrii Kondratiev"
+        MACOSX_BUNDLE_INFO_STRING          "Stepan ${APP_VERSION_FULL}, Copyright © 2026 Andrii Kondratiev"
         MACOSX_BUNDLE_ICON_FILE            "app.icns"
         MACOSX_BUNDLE_INFO_PLIST           "${CMAKE_SOURCE_DIR}/cmake/MacOSXBundleInfo.plist.in"
     )
 endif()
 
 if(WIN32)
-    target_sources(Stepan PRIVATE "${CMAKE_SOURCE_DIR}/resources/app.rc")
-endif()
-
-if(WIN32)
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/resources/app.rc.in"
+        "${CMAKE_BINARY_DIR}/app.rc"
+        @ONLY
+    )
+    target_sources(Stepan PRIVATE "${CMAKE_BINARY_DIR}/app.rc")
     set_target_properties(Stepan PROPERTIES
         WIN32_EXECUTABLE TRUE
     )

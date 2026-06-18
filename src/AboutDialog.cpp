@@ -1,5 +1,6 @@
 #include "AboutDialog.h"
 #include "AppLocale.h"
+#include "version.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -17,9 +18,11 @@ static const char* kBuildTime = __TIME__;  // e.g. "14:32:05"
 // ── HTML helpers ──────────────────────────────────────────────────────────────
 
 static QString aboutHtml() {
-    const QString qtVer  = QString::fromLatin1(QT_VERSION_STR);
-    const QString build  = QString::fromLatin1(kBuildDate) + "  " +
-                           QString::fromLatin1(kBuildTime);
+    const QString qtVer   = QString::fromLatin1(QT_VERSION_STR);
+    const QString build   = QString::fromLatin1(kBuildDate) + "  " +
+                            QString::fromLatin1(kBuildTime);
+    const QString appVer  = QString::fromLatin1(APP_VERSION_FULL);
+    const QString appHash = QString::fromLatin1(APP_BUILD_HASH);
 
     if (appLangIsEnglish()) return QString(R"(
 <html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px;">
@@ -61,9 +64,9 @@ static QString aboutHtml() {
 </table>
 
 <p style="color:#888; font-size:12px; margin-top:14px;">
-  Build date:&nbsp;<b>%2</b>
+  Version:&nbsp;<b>%3</b>&nbsp;&nbsp;Build:&nbsp;<b>%4</b>&nbsp;&nbsp;Date:&nbsp;<b>%2</b>
 </p>
-</body></html>)").arg(qtVer, build);
+</body></html>)").arg(qtVer, build, appVer, appHash);
 
     // Ukrainian
     return QString(R"(
@@ -106,9 +109,9 @@ static QString aboutHtml() {
 </table>
 
 <p style="color:#888; font-size:12px; margin-top:14px;">
-  Дата збірки:&nbsp;<b>%2</b>
+  Версія:&nbsp;<b>%3</b>&nbsp;&nbsp;Збірка:&nbsp;<b>%4</b>&nbsp;&nbsp;Дата:&nbsp;<b>%2</b>
 </p>
-</body></html>)").arg(qtVer, build);
+</body></html>)").arg(qtVer, build, appVer, appHash);
 }
 
 static QString licenseHtml() {
@@ -262,7 +265,10 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
     f.setBold(true);
     nameLbl->setFont(f);
 
-    auto* verLbl = new QLabel(appTr("Версія 1.0.0", "Version 1.0.0"), this);
+    auto* verLbl = new QLabel(
+        appTr("Версія", "Version") + " " +
+        QString::fromLatin1(APP_VERSION_FULL) + " (" +
+        QString::fromLatin1(APP_BUILD_HASH) + ")", this);
     verLbl->setStyleSheet("color: #777; font-size: 12px;");
 
     auto* descLbl = new QLabel(
