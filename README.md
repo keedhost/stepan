@@ -111,4 +111,4 @@ cmake --build build --config Release
 
 ## Ліцензія
 
-MIT
+[GNU General Public License v3.0](LICENSE)

@@ -112,6 +112,46 @@ if(UNIX AND NOT APPLE)
     )
 endif()
 
+# ── CPack packaging (Linux only) ──────────────────────────────────────────────
+if(UNIX AND NOT APPLE)
+    set(CPACK_PACKAGE_NAME                "stepan")
+    set(CPACK_PACKAGE_VENDOR              "Andrii Kondratiev")
+    set(CPACK_PACKAGE_CONTACT             "Andrii Kondratiev <h0st@ukr.net>")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+        "Coordinate system converter (MGRS, DD, DMS, UTM, USK-2000)")
+    set(CPACK_PACKAGE_VERSION             "${PROJECT_VERSION}")
+    set(CPACK_PACKAGE_HOMEPAGE_URL        "https://github.com/keedhost/stepan")
+    set(CPACK_STRIP_FILES                 ON)
+
+    # DEB (Debian / Ubuntu)
+    set(CPACK_DEBIAN_PACKAGE_SECTION      "utils")
+    set(CPACK_DEBIAN_PACKAGE_PRIORITY     "optional")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS
+        "libqt6webenginewidgets6 (>= 6.2), libqt6widgets6 (>= 6.2), libqt6network6 (>= 6.2), libqt6webchannel6 (>= 6.2)")
+    set(CPACK_DEBIAN_FILE_NAME            "DEB-DEFAULT")
+
+    # RPM (Fedora / RHEL / openSUSE)
+    set(CPACK_RPM_PACKAGE_LICENSE         "GPL-3.0")
+    set(CPACK_RPM_PACKAGE_GROUP           "Applications/Productivity")
+    set(CPACK_RPM_PACKAGE_REQUIRES        "qt6-qtbase >= 6.2, qt6-qtwebengine >= 6.2")
+    set(CPACK_RPM_FILE_NAME               "RPM-DEFAULT")
+    # Prevent RPM from complaining about owning standard system directories
+    set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
+        "/usr/share/applications"
+        "/usr/share/icons"
+        "/usr/share/icons/hicolor"
+        "/usr/share/icons/hicolor/16x16"   "/usr/share/icons/hicolor/16x16/apps"
+        "/usr/share/icons/hicolor/24x24"   "/usr/share/icons/hicolor/24x24/apps"
+        "/usr/share/icons/hicolor/32x32"   "/usr/share/icons/hicolor/32x32/apps"
+        "/usr/share/icons/hicolor/64x64"   "/usr/share/icons/hicolor/64x64/apps"
+        "/usr/share/icons/hicolor/128x128" "/usr/share/icons/hicolor/128x128/apps"
+        "/usr/share/icons/hicolor/256x256" "/usr/share/icons/hicolor/256x256/apps"
+        "/usr/share/icons/hicolor/512x512" "/usr/share/icons/hicolor/512x512/apps"
+    )
+
+    include(CPack)
+endif()
+
 # ── Qt deploy helper (optional, invoked by build scripts) ────────────────────
 qt_generate_deploy_app_script(
     TARGET Stepan
