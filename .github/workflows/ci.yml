@@ -1,0 +1,279 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*.*.*']
+  pull_request:
+    branches: [main, master]
+
+env:
+  QT_VERSION: '6.7.3'
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ── 1. Статичний аналіз коду ──────────────────────────────────────────────────
+  analyze:
+    name: Static Analysis
+    runs-on: ubuntu-22.04
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt and tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends \
+            qt6-base-dev \
+            qt6-webengine-dev \
+            libqt6webenginewidgets6 \
+            libqt6webchannel6-dev \
+            libgl-dev \
+            cppcheck
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: cpp
+          queries: security-and-quality
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Build (required for CodeQL)
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:cpp'
+
+      - name: Run cppcheck
+        run: |
+          cppcheck \
+            --enable=warning,portability,performance \
+            --std=c++17 \
+            --suppress=missingInclude \
+            --suppress=unmatchedSuppression \
+            --error-exitcode=1 \
+            src/
+
+  # ── 2. Windows x64 (.exe + ZIP) ───────────────────────────────────────────────
+  build-windows:
+    name: Windows x64 (.exe)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          modules: qtwebengine qtwebchannel qtpositioning
+          cache: true
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v4
+
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Deploy Qt DLLs with windeployqt
+        shell: pwsh
+        run: |
+          windeployqt --release --compiler-runtime build\Stepan.exe
+
+      - name: Create ZIP archive
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path CMakeLists.txt `
+            -Pattern 'project\s*\(\s*\w+\s+VERSION\s+(\d+\.\d+\.\d+)').Matches[0].Groups[1].Value
+          $staging = "Stepan-$version-windows-x64"
+          New-Item -ItemType Directory $staging | Out-Null
+
+          # Copy exe and all Qt deployment files
+          Get-ChildItem build -File | Copy-Item -Destination $staging
+          foreach ($d in @("platforms","tls","imageformats","iconengines",
+                           "styles","resources","translations","networkinformation")) {
+            if (Test-Path "build\$d") {
+              Copy-Item "build\$d" -Destination "$staging\$d" -Recurse
+            }
+          }
+
+          Compress-Archive -Path "$staging\*" -DestinationPath "$staging.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Stepan-Windows-x64
+          path: Stepan-*-windows-x64.zip
+          retention-days: 30
+
+  # ── 3. macOS (.dmg) ────────────────────────────────────────────────────────────
+  build-macos:
+    name: macOS (.dmg)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: mac
+          target: desktop
+          arch: clang_64
+          modules: qtwebengine qtwebchannel qtpositioning
+          cache: true
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel $(sysctl -n hw.logicalcpu)
+
+      - name: Create DMG with macdeployqt
+        run: |
+          VERSION=$(grep -m1 'project.*VERSION' CMakeLists.txt | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          macdeployqt build/Stepan.app -dmg
+          mv build/Stepan.dmg "Stepan-${VERSION}-macos.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Stepan-macOS
+          path: Stepan-*-macos.dmg
+          retention-days: 30
+
+  # ── 4. Linux x64 (tar.xz + AppImage + deb + rpm) ─────────────────────────────
+  build-linux:
+    name: Linux x64 (tar.xz + AppImage + deb + rpm)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build \
+            qt6-base-dev \
+            qt6-webengine-dev \
+            libqt6webenginewidgets6 \
+            libqt6webchannel6-dev \
+            libgl-dev \
+            patchelf \
+            libfuse2 \
+            dpkg-dev \
+            rpm
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Read version
+        run: |
+          echo "APP_VERSION=$(grep -m1 'project.*VERSION' CMakeLists.txt | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')" \
+            >> $GITHUB_ENV
+
+      # ── tar.xz ──────────────────────────────────────────────────────────────
+      - name: Create tar.xz
+        run: |
+          DESTDIR=$PWD/pkg cmake --install build
+          tar -cJf "Stepan-${APP_VERSION}-linux-x64.tar.xz" \
+            -C pkg/usr \
+            bin/stepan
+
+      # ── DEB ─────────────────────────────────────────────────────────────────
+      - name: Create DEB package
+        run: cd build && cpack -G DEB
+
+      # ── RPM ─────────────────────────────────────────────────────────────────
+      - name: Create RPM package
+        run: cd build && cpack -G RPM
+
+      # ── AppImage ────────────────────────────────────────────────────────────
+      - name: Download linuxdeploy
+        run: |
+          wget -q "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          wget -q "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage"
+          chmod +x linuxdeploy*.AppImage
+
+      - name: Create AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          QMAKE: /usr/bin/qmake6
+        run: |
+          # Install into AppDir (reuse pkg/ if already populated, else fresh install)
+          DESTDIR=$PWD/AppDir cmake --install build
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+          # Rename to consistent name regardless of app name locale
+          find . -maxdepth 1 -name "*.AppImage" ! -name "linuxdeploy*" \
+            -exec mv {} "Stepan-${APP_VERSION}-linux-x64.AppImage" \;
+
+      - name: Collect packages
+        run: |
+          cp build/*.deb . 2>/dev/null || true
+          cp build/*.rpm . 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Stepan-Linux-x64
+          path: |
+            Stepan-*-linux-x64.tar.xz
+            Stepan-*-linux-x64.AppImage
+            *.deb
+            *.rpm
+          retention-days: 30
+
+  # ── 5. GitHub Release (тільки для тегів v*.*.*) ───────────────────────────────
+  release:
+    name: GitHub Release
+    needs: [build-windows, build-macos, build-linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            Stepan-*-windows-x64.zip
+            Stepan-*-macos.dmg
+            Stepan-*-linux-x64.tar.xz
+            Stepan-*-linux-x64.AppImage
+            *.deb
+            *.rpm
