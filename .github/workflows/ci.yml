@@ -81,7 +81,7 @@ jobs:
           host: windows
           target: desktop
           arch: win64_msvc2019_64
-          modules: qtwebengine qtwebchannel
+          modules: qtwebengine qtwebchannel qtpositioning
           cache: true
 
       - name: Set up MSVC
@@ -143,7 +143,7 @@ jobs:
           host: mac
           target: desktop
           arch: clang_64
-          modules: qtwebengine qtwebchannel
+          modules: qtwebengine qtwebchannel qtpositioning
           cache: true
 
       - name: Configure

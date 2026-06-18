@@ -152,10 +152,12 @@ if(UNIX AND NOT APPLE)
     include(CPack)
 endif()
 
-# ── Qt deploy helper (optional, invoked by build scripts) ────────────────────
-qt_generate_deploy_app_script(
-    TARGET Stepan
-    OUTPUT_SCRIPT deploy_script
-    NO_UNSUPPORTED_PLATFORM_ERROR
-)
-install(SCRIPT ${deploy_script})
+# ── Qt deploy helper (macOS + Windows only — Linux uses system Qt packages) ──
+if(NOT (UNIX AND NOT APPLE))
+    qt_generate_deploy_app_script(
+        TARGET Stepan
+        OUTPUT_SCRIPT deploy_script
+        NO_UNSUPPORTED_PLATFORM_ERROR
+    )
+    install(SCRIPT ${deploy_script})
+endif()
