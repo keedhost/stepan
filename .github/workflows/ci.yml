@@ -100,34 +100,42 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
 
-      - name: Deploy Qt DLLs with windeployqt
-        shell: pwsh
-        run: |
-          windeployqt --release --compiler-runtime build\Stepan.exe
-
-      - name: Create ZIP archive
+      - name: Stage portable deployment
         shell: pwsh
         run: |
           $version = (Select-String -Path CMakeLists.txt `
             -Pattern 'set\s*\(\s*APP_VERSION_FULL\s+"([^"]+)"').Matches[0].Groups[1].Value
-          $staging = "Stepan-$version-windows-x64"
-          New-Item -ItemType Directory $staging | Out-Null
+          echo "APP_VERSION=$version" >> $env:GITHUB_ENV
 
-          # Copy exe and all Qt deployment files
-          Get-ChildItem build -File | Copy-Item -Destination $staging
-          foreach ($d in @("platforms","tls","imageformats","iconengines",
-                           "styles","resources","translations","networkinformation")) {
-            if (Test-Path "build\$d") {
-              Copy-Item "build\$d" -Destination "$staging\$d" -Recurse
-            }
-          }
+          # windeployqt puts Qt DLLs/plugins into deploy\
+          # EXE must be there too (Windows DLL search requires same directory)
+          New-Item -ItemType Directory deploy\config | Out-Null
+          Copy-Item build\Stepan.exe deploy\
+          windeployqt --release --compiler-runtime --dir deploy build\Stepan.exe
 
-          Compress-Archive -Path "$staging\*" -DestinationPath "$staging.zip"
+      - name: Create portable ZIP
+        shell: pwsh
+        run: |
+          $portable = "Stepan-$env:APP_VERSION-windows-x64"
+          # Copy staged files into named folder — no tar-bomb
+          Copy-Item deploy $portable -Recurse
+          Compress-Archive -Path $portable -DestinationPath "$portable.zip"
+
+      - name: Create NSIS installer
+        shell: pwsh
+        run: |
+          $deployAbs = (Resolve-Path deploy).Path
+          makensis `
+            /DAPP_VERSION=$env:APP_VERSION `
+            "/DDEPLOY_DIR=$deployAbs" `
+            installer\stepan.nsi
 
       - uses: actions/upload-artifact@v4
         with:
           name: Stepan-Windows-x64
-          path: Stepan-*-windows-x64.zip
+          path: |
+            Stepan-*-windows-x64.zip
+            Stepan-*-windows-x64-Setup.exe
           retention-days: 30
 
   # ── 3. macOS (.dmg) ────────────────────────────────────────────────────────────
@@ -280,6 +288,7 @@ jobs:
           generate_release_notes: true
           files: |
             Stepan-*-windows-x64.zip
+            Stepan-*-windows-x64-Setup.exe
             Stepan-*-macos-*.dmg
             Stepan-*-linux-x64.tar.xz
             Stepan-*-linux-x64.AppImage

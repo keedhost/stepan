@@ -43,8 +43,10 @@ FetchContent_Declare(
     GIT_TAG        v2.3
     GIT_SHALLOW    TRUE
 )
-# Build only the library, skip tools/docs/tests
+# Build only the static library; disable shared to avoid missing DLL at runtime
 set(GEOGRAPHICLIB_LIB_TYPE   STATIC CACHE STRING "" FORCE)
+set(GEOGRAPHICLIB_SHARED_LIB OFF    CACHE BOOL   "" FORCE)
+set(GEOGRAPHICLIB_STATIC_LIB ON     CACHE BOOL   "" FORCE)
 set(BUILD_DOCUMENTATION      OFF    CACHE BOOL   "" FORCE)
 set(EXAMPLEDIR               ""     CACHE PATH   "" FORCE)
 FetchContent_MakeAvailable(GeographicLib)
