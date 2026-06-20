@@ -124,6 +124,8 @@ jobs:
       - name: Create NSIS installer
         shell: pwsh
         run: |
+          # NSIS is pre-installed on windows-latest but not in PATH
+          $env:PATH = "C:\Program Files (x86)\NSIS;$env:PATH"
           $deployAbs = (Resolve-Path deploy).Path
           makensis `
             /DAPP_VERSION=$env:APP_VERSION `
