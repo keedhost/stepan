@@ -385,7 +385,75 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # ── 6. Test Windows (інсталятор + портативна версія) ─────────────────────────
+  # ── 6. Test Linux RPM (Fedora) ───────────────────────────────────────────────
+  test-linux-rpm:
+    name: Test Linux RPM (Fedora)
+    needs: build-linux
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:41
+      options: --shm-size=2g
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Stepan-Linux-x64
+
+      - name: Install Qt6 runtime + Xvfb + scrot
+        run: |
+          dnf install -y \
+            xorg-x11-server-Xvfb \
+            scrot \
+            qt6-qtbase \
+            qt6-qtwebengine \
+            qt6-qtwebchannel
+
+      - name: RPM — install
+        run: dnf install -y ./stepan-*.rpm
+
+      - name: Start Xvfb
+        run: |
+          Xvfb :99 -screen 0 1280x960x24 &
+          echo "XVFB_PID=$!" >> $GITHUB_ENV
+          echo "DISPLAY=:99"  >> $GITHUB_ENV
+          sleep 1
+
+      - name: RPM — CLI test
+        run: |
+          stepan --convert "37UDB1234567890" | tee /tmp/out.txt
+          grep -qE "[0-9]+\.[0-9]+" /tmp/out.txt \
+            || { echo "CLI: no coordinates in output"; exit 1; }
+
+      - name: RPM — GUI smoke test (Xvfb)
+        run: |
+          QTWEBENGINE_DISABLE_SANDBOX=1 stepan &
+          SMOKE_PID=$!
+          sleep 5
+          scrot /tmp/screenshot-rpm.png 2>/dev/null || true
+          if kill -0 $SMOKE_PID 2>/dev/null; then
+            kill $SMOKE_PID; wait $SMOKE_PID 2>/dev/null || true
+            echo "RPM GUI smoke: OK"
+          else
+            echo "RPM GUI smoke: FAILED (app exited within 5 s)"; exit 1
+          fi
+
+      - name: RPM — uninstall
+        run: dnf remove -y stepan
+
+      - name: Stop Xvfb
+        if: always()
+        run: kill $XVFB_PID 2>/dev/null || true
+
+      - name: Upload RPM screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-linux-rpm
+          path: /tmp/screenshot-rpm.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ── 7. Test Windows (інсталятор + портативна версія) ─────────────────────────
   test-windows:
     name: Test Windows installer + portable
     needs: build-windows
@@ -545,7 +613,7 @@ jobs:
   # ── 8. GitHub Release (тільки для тегів v*.*.*) ───────────────────────────────
   release:
     name: GitHub Release
-    needs: [build-windows, build-macos, build-linux, test-linux, test-windows, test-macos]
+    needs: [build-windows, build-macos, build-linux, test-linux, test-linux-rpm, test-windows, test-macos]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
