@@ -10,6 +10,11 @@
 #include <QList>
 #include <QPair>
 #include <QSettings>
+#ifdef Q_OS_WIN
+#  include <windows.h>
+#  include <io.h>
+#  include <fcntl.h>
+#endif
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -49,7 +54,30 @@ static QList<QPair<QString,QString>> makeUrls(const QString& svc, double lat, do
 
 // ── Console-only mode ─────────────────────────────────────────────────────────
 
+#ifdef Q_OS_WIN
+// WIN32_EXECUTABLE apps (Windows subsystem) don't have the CRT bind stdio to the
+// inherited pipe/console handles from the parent process (PowerShell, cmd.exe).
+// GetStdHandle() does return the inherited handle — we just need to wire it into
+// the CRT's fd table so that QTextStream(stdout) / fwrite(stdout) actually reach it.
+static void rewireWindowsStdio() {
+    auto rewire = [](DWORD which, int targetFd, FILE* stream) {
+        HANDLE h = GetStdHandle(which);
+        if (!h || h == INVALID_HANDLE_VALUE) return;
+        int fd = _open_osfhandle(reinterpret_cast<intptr_t>(h), _O_TEXT);
+        if (fd < 0) return;
+        _dup2(fd, targetFd);
+        _close(fd);
+        setvbuf(stream, nullptr, _IONBF, 0);
+    };
+    rewire(STD_OUTPUT_HANDLE, 1, stdout);
+    rewire(STD_ERROR_HANDLE,  2, stderr);
+}
+#endif
+
 static int runConsole(int argc, char* argv[]) {
+#ifdef Q_OS_WIN
+    rewireWindowsStdio();
+#endif
     QCoreApplication app(argc, argv);
     app.setApplicationName("Stepan");
     app.setApplicationVersion("1.0.0");

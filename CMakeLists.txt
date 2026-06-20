@@ -43,12 +43,15 @@ FetchContent_Declare(
     GIT_TAG        v2.3
     GIT_SHALLOW    TRUE
 )
-# Build only the static library; disable shared to avoid missing DLL at runtime
+# Build only the static library; disable shared to avoid missing .so/.dll at runtime.
+# qt_standard_project_setup() sets BUILD_SHARED_LIBS=ON on Linux (Qt is shared there),
+# so we must shadow it with a non-cache variable before GeographicLib processes it.
 set(GEOGRAPHICLIB_LIB_TYPE   STATIC CACHE STRING "" FORCE)
 set(GEOGRAPHICLIB_SHARED_LIB OFF    CACHE BOOL   "" FORCE)
 set(GEOGRAPHICLIB_STATIC_LIB ON     CACHE BOOL   "" FORCE)
 set(BUILD_DOCUMENTATION      OFF    CACHE BOOL   "" FORCE)
 set(EXAMPLEDIR               ""     CACHE PATH   "" FORCE)
+set(BUILD_SHARED_LIBS OFF)
 FetchContent_MakeAvailable(GeographicLib)
 
 # ── Application target ────────────────────────────────────────────────────────
@@ -73,7 +76,7 @@ target_link_libraries(Stepan PRIVATE
     Qt6::WebEngineWidgets
     Qt6::WebChannel
     Qt6::Network
-    GeographicLib::GeographicLib
+    GeographicLib::GeographicLib_STATIC
 )
 
 # ── Platform-specific settings ────────────────────────────────────────────────
