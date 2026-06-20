@@ -271,10 +271,219 @@ jobs:
             *.rpm
           retention-days: 30
 
-  # ── 5. GitHub Release (тільки для тегів v*.*.*) ───────────────────────────────
+  # ── 5. Test Linux (DEB + AppImage + tar.xz) ──────────────────────────────────
+  test-linux:
+    name: Test Linux packages
+    needs: build-linux
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Stepan-Linux-x64
+
+      - name: Install Qt6 runtime + Xvfb
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends \
+            xvfb \
+            libqt6webenginewidgets6 \
+            libqt6widgets6 \
+            libqt6network6 \
+            libqt6webchannel6
+
+      # ── DEB ─────────────────────────────────────────────────────────────────
+      - name: DEB — install
+        run: sudo apt-get install -y ./stepan_*.deb
+
+      - name: DEB — CLI test
+        run: |
+          stepan --convert "37UDB1234567890" | tee /tmp/out.txt
+          grep -qE "[0-9]+\.[0-9]+" /tmp/out.txt \
+            || { echo "CLI: no coordinates in output"; exit 1; }
+
+      - name: DEB — GUI smoke test (Xvfb)
+        run: |
+          QTWEBENGINE_DISABLE_SANDBOX=1 \
+            xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" stepan &
+          SMOKE_PID=$!
+          sleep 5
+          if kill -0 $SMOKE_PID 2>/dev/null; then
+            kill $SMOKE_PID; wait $SMOKE_PID 2>/dev/null || true
+            echo "DEB GUI smoke: OK"
+          else
+            echo "DEB GUI smoke: FAILED (app exited within 5 s)"; exit 1
+          fi
+
+      - name: DEB — uninstall
+        run: sudo apt-get remove -y stepan
+
+      # ── AppImage ────────────────────────────────────────────────────────────
+      - name: AppImage — CLI test
+        run: |
+          chmod +x Stepan-*-linux-x64.AppImage
+          APPIMAGE_EXTRACT_AND_RUN=1 \
+            ./Stepan-*-linux-x64.AppImage --convert "37UDB1234567890" | tee /tmp/out.txt
+          grep -qE "[0-9]+\.[0-9]+" /tmp/out.txt \
+            || { echo "CLI: no coordinates in output"; exit 1; }
+
+      - name: AppImage — GUI smoke test (Xvfb)
+        run: |
+          APPIMAGE_EXTRACT_AND_RUN=1 QTWEBENGINE_DISABLE_SANDBOX=1 \
+            xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" \
+            ./Stepan-*-linux-x64.AppImage &
+          SMOKE_PID=$!
+          sleep 5
+          if kill -0 $SMOKE_PID 2>/dev/null; then
+            kill $SMOKE_PID; wait $SMOKE_PID 2>/dev/null || true
+            echo "AppImage GUI smoke: OK"
+          else
+            echo "AppImage GUI smoke: FAILED (app exited within 5 s)"; exit 1
+          fi
+
+      # ── tar.xz (портативна версія) ──────────────────────────────────────────
+      - name: tar.xz — extract
+        run: mkdir tartest && tar -xJf Stepan-*-linux-x64.tar.xz -C tartest
+
+      - name: tar.xz — CLI test
+        run: |
+          tartest/bin/stepan --convert "37UDB1234567890" | tee /tmp/out.txt
+          grep -qE "[0-9]+\.[0-9]+" /tmp/out.txt \
+            || { echo "CLI: no coordinates in output"; exit 1; }
+
+      - name: tar.xz — GUI smoke test (Xvfb)
+        run: |
+          QTWEBENGINE_DISABLE_SANDBOX=1 \
+            xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" \
+            tartest/bin/stepan &
+          SMOKE_PID=$!
+          sleep 5
+          if kill -0 $SMOKE_PID 2>/dev/null; then
+            kill $SMOKE_PID; wait $SMOKE_PID 2>/dev/null || true
+            echo "tar.xz GUI smoke: OK"
+          else
+            echo "tar.xz GUI smoke: FAILED (app exited within 5 s)"; exit 1
+          fi
+
+  # ── 6. Test Windows (інсталятор + портативна версія) ─────────────────────────
+  test-windows:
+    name: Test Windows installer + portable
+    needs: build-windows
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Stepan-Windows-x64
+
+      # ── Портативна версія ───────────────────────────────────────────────────
+      - name: Portable — extract
+        shell: pwsh
+        run: Expand-Archive (Get-Item "Stepan-*-windows-x64.zip") -DestinationPath portable_test
+
+      - name: Portable — CLI test
+        shell: pwsh
+        run: |
+          $exe = (Get-ChildItem portable_test -Recurse -Filter "Stepan.exe")[0].FullName
+          $out = & $exe --convert "37UDB1234567890" 2>&1 | Out-String
+          Write-Host "Output: $out"
+          if ($out -notmatch '\d+\.\d+') { throw "CLI: no coordinates in output" }
+
+      - name: Portable — GUI smoke test
+        shell: pwsh
+        run: |
+          $exe  = (Get-ChildItem portable_test -Recurse -Filter "Stepan.exe")[0].FullName
+          $proc = Start-Process -FilePath $exe -PassThru
+          Start-Sleep 5
+          if ($proc.HasExited) {
+            throw "Portable: app exited within 5 s (code $($proc.ExitCode))"
+          }
+          $proc.Kill(); $proc.WaitForExit()
+          Write-Host "Portable GUI smoke: OK"
+
+      # ── Інсталятор ──────────────────────────────────────────────────────────
+      - name: Installer — silent install
+        shell: pwsh
+        run: |
+          $setup = (Get-Item "Stepan-*-windows-x64-Setup.exe").FullName
+          $proc  = Start-Process -FilePath $setup -ArgumentList "/S" -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "Installer failed (code $($proc.ExitCode))" }
+          if (-not (Test-Path "C:\Program Files\Stepan\Stepan.exe")) {
+            throw "Stepan.exe not found after installation"
+          }
+          Write-Host "Installation: OK"
+
+      - name: Installer — CLI test
+        shell: pwsh
+        run: |
+          $out = & "C:\Program Files\Stepan\Stepan.exe" --convert "37UDB1234567890" 2>&1 | Out-String
+          Write-Host "Output: $out"
+          if ($out -notmatch '\d+\.\d+') { throw "CLI: no coordinates in output" }
+
+      - name: Installer — GUI smoke test
+        shell: pwsh
+        run: |
+          $proc = Start-Process -FilePath "C:\Program Files\Stepan\Stepan.exe" -PassThru
+          Start-Sleep 5
+          if ($proc.HasExited) {
+            throw "Installed app exited within 5 s (code $($proc.ExitCode))"
+          }
+          $proc.Kill(); $proc.WaitForExit()
+          Write-Host "Installer GUI smoke: OK"
+
+      - name: Installer — silent uninstall + verify
+        shell: pwsh
+        run: |
+          Start-Process -FilePath "C:\Program Files\Stepan\Uninstall.exe" `
+            -ArgumentList "/S" -Wait
+          if (Test-Path "C:\Program Files\Stepan\Stepan.exe") {
+            throw "Uninstall failed: Stepan.exe still present"
+          }
+          Write-Host "Uninstall: OK"
+
+  # ── 7. Test macOS (DMG) ───────────────────────────────────────────────────────
+  test-macos:
+    name: Test macOS DMG
+    needs: build-macos
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Stepan-macOS
+
+      - name: Mount DMG and strip quarantine
+        run: |
+          hdiutil attach Stepan-*-macos-*.dmg -mountpoint /Volumes/Stepan -quiet
+          xattr -r -c /Volumes/Stepan/Stepan.app
+
+      - name: CLI test
+        run: |
+          /Volumes/Stepan/Stepan.app/Contents/MacOS/Stepan --convert "37UDB1234567890" \
+            | tee /tmp/out.txt
+          grep -qE "[0-9]+\.[0-9]+" /tmp/out.txt \
+            || { echo "CLI: no coordinates in output"; exit 1; }
+
+      - name: GUI smoke test
+        run: |
+          /Volumes/Stepan/Stepan.app/Contents/MacOS/Stepan &
+          SMOKE_PID=$!
+          sleep 5
+          if kill -0 $SMOKE_PID 2>/dev/null; then
+            kill $SMOKE_PID; wait $SMOKE_PID 2>/dev/null || true
+            echo "macOS GUI smoke: OK"
+          else
+            echo "macOS GUI smoke: FAILED (app exited within 5 s)"; exit 1
+          fi
+
+      - name: Unmount DMG
+        if: always()
+        run: hdiutil detach /Volumes/Stepan -quiet || true
+
+  # ── 8. GitHub Release (тільки для тегів v*.*.*) ───────────────────────────────
   release:
     name: GitHub Release
-    needs: [build-windows, build-macos, build-linux]
+    needs: [build-windows, build-macos, build-linux, test-linux, test-windows, test-macos]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
