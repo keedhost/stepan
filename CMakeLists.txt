@@ -52,7 +52,20 @@ set(GEOGRAPHICLIB_STATIC_LIB ON     CACHE BOOL   "" FORCE)
 set(BUILD_DOCUMENTATION      OFF    CACHE BOOL   "" FORCE)
 set(EXAMPLEDIR               ""     CACHE PATH   "" FORCE)
 set(BUILD_SHARED_LIBS OFF)
-FetchContent_MakeAvailable(GeographicLib)
+# Use manual populate + EXCLUDE_FROM_ALL so GeographicLib's own install() rules
+# (utilities to bin/, scripts to sbin/, headers, cmake configs) are NOT included
+# when we run "cmake --install" or cpack. We only want our stepan binary packaged.
+# On Fedora 41+ /usr/sbin is a symlink (UsrMerge); owning it as a directory causes
+# a conflict with the 'filesystem' package — this is the root cause we're avoiding.
+FetchContent_GetProperties(GeographicLib)
+if(NOT geographiclib_POPULATED)
+    FetchContent_Populate(GeographicLib)
+    add_subdirectory(
+        ${geographiclib_SOURCE_DIR}
+        ${geographiclib_BINARY_DIR}
+        EXCLUDE_FROM_ALL
+    )
+endif()
 
 # ── Application target ────────────────────────────────────────────────────────
 qt_add_executable(Stepan
