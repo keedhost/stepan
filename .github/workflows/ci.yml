@@ -287,10 +287,18 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends \
             xvfb \
+            scrot \
             libqt6webenginewidgets6 \
             libqt6widgets6 \
             libqt6network6 \
             libqt6webchannel6
+
+      - name: Start Xvfb
+        run: |
+          Xvfb :99 -screen 0 1280x960x24 &
+          echo "XVFB_PID=$!" >> $GITHUB_ENV
+          echo "DISPLAY=:99"  >> $GITHUB_ENV
+          sleep 1
 
       # ── DEB ─────────────────────────────────────────────────────────────────
       - name: DEB — install
@@ -304,10 +312,10 @@ jobs:
 
       - name: DEB — GUI smoke test (Xvfb)
         run: |
-          QTWEBENGINE_DISABLE_SANDBOX=1 \
-            xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" stepan &
+          QTWEBENGINE_DISABLE_SANDBOX=1 stepan &
           SMOKE_PID=$!
           sleep 5
+          scrot /tmp/screenshot-deb.png 2>/dev/null || true
           if kill -0 $SMOKE_PID 2>/dev/null; then
             kill $SMOKE_PID; wait $SMOKE_PID 2>/dev/null || true
             echo "DEB GUI smoke: OK"
@@ -330,10 +338,10 @@ jobs:
       - name: AppImage — GUI smoke test (Xvfb)
         run: |
           APPIMAGE_EXTRACT_AND_RUN=1 QTWEBENGINE_DISABLE_SANDBOX=1 \
-            xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" \
             ./Stepan-*-linux-x64.AppImage &
           SMOKE_PID=$!
           sleep 5
+          scrot /tmp/screenshot-appimage.png 2>/dev/null || true
           if kill -0 $SMOKE_PID 2>/dev/null; then
             kill $SMOKE_PID; wait $SMOKE_PID 2>/dev/null || true
             echo "AppImage GUI smoke: OK"
@@ -353,17 +361,29 @@ jobs:
 
       - name: tar.xz — GUI smoke test (Xvfb)
         run: |
-          QTWEBENGINE_DISABLE_SANDBOX=1 \
-            xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" \
-            tartest/bin/stepan &
+          QTWEBENGINE_DISABLE_SANDBOX=1 tartest/bin/stepan &
           SMOKE_PID=$!
           sleep 5
+          scrot /tmp/screenshot-tarxz.png 2>/dev/null || true
           if kill -0 $SMOKE_PID 2>/dev/null; then
             kill $SMOKE_PID; wait $SMOKE_PID 2>/dev/null || true
             echo "tar.xz GUI smoke: OK"
           else
             echo "tar.xz GUI smoke: FAILED (app exited within 5 s)"; exit 1
           fi
+
+      - name: Stop Xvfb
+        if: always()
+        run: kill $XVFB_PID 2>/dev/null || true
+
+      - name: Upload Linux screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-linux
+          path: /tmp/screenshot-*.png
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ── 6. Test Windows (інсталятор + портативна версія) ─────────────────────────
   test-windows:
@@ -393,8 +413,19 @@ jobs:
         shell: pwsh
         run: |
           $exe  = (Get-ChildItem portable_test -Recurse -Filter "Stepan.exe")[0].FullName
-          $proc = Start-Process -FilePath $exe -PassThru
+          $proc = Start-Process -FilePath $exe -WindowStyle Normal -PassThru
           Start-Sleep 5
+          try {
+            Add-Type -AssemblyName System.Drawing
+            Add-Type -AssemblyName System.Windows.Forms
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            $g   = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen(0, 0, 0, 0, $bmp.Size)
+            $bmp.Save("screenshot-portable.png")
+            $g.Dispose(); $bmp.Dispose()
+            Write-Host "Screenshot saved: screenshot-portable.png"
+          } catch { Write-Host "Screenshot failed: $_" }
           if ($proc.HasExited) {
             throw "Portable: app exited within 5 s (code $($proc.ExitCode))"
           }
@@ -423,8 +454,20 @@ jobs:
       - name: Installer — GUI smoke test
         shell: pwsh
         run: |
-          $proc = Start-Process -FilePath "C:\Program Files\Stepan\Stepan.exe" -PassThru
+          $proc = Start-Process -FilePath "C:\Program Files\Stepan\Stepan.exe" `
+            -WindowStyle Normal -PassThru
           Start-Sleep 5
+          try {
+            Add-Type -AssemblyName System.Drawing
+            Add-Type -AssemblyName System.Windows.Forms
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            $g   = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen(0, 0, 0, 0, $bmp.Size)
+            $bmp.Save("screenshot-installed.png")
+            $g.Dispose(); $bmp.Dispose()
+            Write-Host "Screenshot saved: screenshot-installed.png"
+          } catch { Write-Host "Screenshot failed: $_" }
           if ($proc.HasExited) {
             throw "Installed app exited within 5 s (code $($proc.ExitCode))"
           }
@@ -440,6 +483,15 @@ jobs:
             throw "Uninstall failed: Stepan.exe still present"
           }
           Write-Host "Uninstall: OK"
+
+      - name: Upload Windows screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-windows
+          path: screenshot-*.png
+          if-no-files-found: ignore
+          retention-days: 7
 
   # ── 7. Test macOS (DMG) ───────────────────────────────────────────────────────
   test-macos:
@@ -469,12 +521,22 @@ jobs:
           /Volumes/Stepan/Stepan.app/Contents/MacOS/Stepan &
           SMOKE_PID=$!
           sleep 5
+          screencapture -x /tmp/screenshot-macos.png 2>/dev/null || true
           if kill -0 $SMOKE_PID 2>/dev/null; then
             kill $SMOKE_PID; wait $SMOKE_PID 2>/dev/null || true
             echo "macOS GUI smoke: OK"
           else
             echo "macOS GUI smoke: FAILED (app exited within 5 s)"; exit 1
           fi
+
+      - name: Upload macOS screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-macos
+          path: /tmp/screenshot-macos.png
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Unmount DMG
         if: always()
