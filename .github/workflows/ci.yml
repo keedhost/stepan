@@ -121,13 +121,14 @@ jobs:
           Copy-Item deploy $portable -Recurse
           Compress-Archive -Path $portable -DestinationPath "$portable.zip"
 
+      - name: Install NSIS
+        run: choco install nsis --no-progress -y
+
       - name: Create NSIS installer
         shell: pwsh
         run: |
-          # NSIS is pre-installed on windows-latest but not in PATH
-          $env:PATH = "C:\Program Files (x86)\NSIS;$env:PATH"
           $deployAbs = (Resolve-Path deploy).Path
-          makensis `
+          & "C:\Program Files (x86)\NSIS\makensis.exe" `
             /DAPP_VERSION=$env:APP_VERSION `
             "/DDEPLOY_DIR=$deployAbs" `
             installer\stepan.nsi
