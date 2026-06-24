@@ -8,23 +8,24 @@
 <meta property="og:title" content="Степан — Конвертер систем координат">
 <meta property="og:description" content="Для топографів, геодезистів, операторів БПЛА та військових. macOS · Windows · Linux">
 <meta property="og:type" content="website">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 <style id="hljs-overrides">
 pre code.hljs { background: transparent; padding: 0; font-size: inherit; }
 .hljs { background: transparent; }
-.hljs-comment, .hljs-quote { color: #5a5040; font-style: italic; }
 </style>
 <style>
 :root {
-  --bg:     #17140d;
-  --bg2:    #1e1a10;
-  --bg3:    #252018;
-  --border: #36301e;
-  --text:   #dfd7c0;
-  --muted:  #7a7060;
-  --amber:  #c07c1a;
-  --coord:  #5a9050;
-  --dim:    #3a3224;
+  --bg:     #f8f3e8;
+  --bg2:    #ede8da;
+  --bg3:    #e4ddd0;
+  --rule:   #1a1a1a;
+  --rule2:  #7a7a7a;
+  --text:   #111111;
+  --muted:  #555555;
+  --amber:  #111111;
+  --coord:  #222222;
+  --border: #1a1a1a;
+  --dim:    #bdb5a5;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -33,8 +34,6 @@ html { scroll-behavior: smooth; }
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background-color: var(--bg);
-  background-image: radial-gradient(circle, var(--dim) 1px, transparent 1px);
-  background-size: 22px 22px;
   color: var(--text);
   line-height: 1.65;
   overflow-x: hidden;
@@ -43,8 +42,8 @@ body {
 /* ── Nav ── */
 nav {
   position: sticky; top: 0; z-index: 100;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  border-bottom: 3px solid var(--rule);
   padding: 0 2rem;
   display: flex; align-items: center; justify-content: space-between;
   height: 56px;
@@ -52,7 +51,7 @@ nav {
 .nav-brand {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 1.25rem; font-weight: 700;
-  color: var(--amber); text-decoration: none;
+  color: var(--text); text-decoration: none;
   letter-spacing: .02em;
 }
 .nav-links { display: flex; gap: 1.5rem; list-style: none; }
@@ -60,20 +59,24 @@ nav {
   color: var(--muted); text-decoration: none; font-size: .77rem;
   text-transform: uppercase; letter-spacing: .08em;
   transition: color .12s;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
 }
-.nav-links a:hover { color: var(--text); }
+.nav-links a:hover { color: var(--text); border-bottom-color: var(--text); }
 @media (max-width: 680px) { .nav-links { display: none; } }
 
 /* ── Layout ── */
 .container { max-width: 1080px; margin: 0 auto; padding: 0 1.5rem; }
-.section-wrap { padding: 5rem 0; border-top: 1px solid var(--border); }
+.section-wrap { padding: 5rem 0; border-top: 3px solid var(--rule); }
 .section-wrap:first-of-type { border-top: none; }
 
 .section-num {
   display: block;
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: .68rem; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--amber); margin-bottom: .8rem;
+  color: var(--text); font-weight: 700;
+  border-left: 4px solid var(--rule); padding-left: .75rem;
+  margin-bottom: .9rem;
 }
 
 h2 {
@@ -86,12 +89,12 @@ h2 {
   color: var(--muted); max-width: 580px;
   margin-bottom: 2.5rem; font-size: .9rem; line-height: 1.75;
 }
-.section-desc a { color: var(--amber); text-decoration: none; }
-.section-desc a:hover { text-decoration: underline; }
+.section-desc a { color: var(--text); text-decoration: underline; }
+.section-desc a:hover { text-decoration: none; }
 
 /* ── Hero ── */
 .hero {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 3px solid var(--rule);
   padding: 5rem 0 4.5rem;
 }
 .hero-grid {
@@ -107,7 +110,7 @@ h2 {
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: .68rem; letter-spacing: .15em; text-transform: uppercase;
   color: var(--muted); margin-bottom: 1.1rem;
-  border-left: 3px solid var(--amber); padding-left: .75rem;
+  border-left: 4px solid var(--rule); padding-left: .75rem;
 }
 .hero h1 {
   font-family: Georgia, 'Times New Roman', serif;
@@ -122,51 +125,55 @@ h2 {
 .hero-btns { display: flex; gap: .6rem; flex-wrap: wrap; }
 
 .coord-block {
-  border: 1px solid var(--border);
-  background: var(--bg2);
+  border: 2px solid var(--rule);
+  background: var(--bg);
 }
 .coord-block-label {
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: .65rem; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--muted); padding: .55rem 1rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg3);
+  color: var(--bg); padding: .55rem 1rem;
+  border-bottom: 2px solid var(--rule);
+  background: var(--rule);
+  font-weight: 700;
 }
 .coord-table {
   width: 100%; border-collapse: collapse;
   font-family: 'Consolas', 'Courier New', monospace; font-size: .86rem;
 }
-.coord-table tr { border-bottom: 1px solid var(--border); }
+.coord-table tr { border-bottom: 1px solid var(--rule2); }
 .coord-table tr:last-child { border-bottom: none; }
 .coord-table td { padding: .6rem 1rem; vertical-align: middle; }
-.coord-fmt { color: var(--amber); font-size: .72rem; letter-spacing: .06em; white-space: nowrap; width: 34%; }
-.coord-val { color: var(--coord); }
+.coord-fmt { color: var(--muted); font-size: .72rem; letter-spacing: .06em; white-space: nowrap; width: 34%; font-weight: 700; text-transform: uppercase; }
+.coord-val { color: var(--coord); font-weight: 600; }
 
 /* ── Buttons ── */
 .btn {
   display: inline-flex; align-items: center;
-  padding: .6rem 1.25rem; border-radius: 0;
-  font-size: .84rem; font-weight: 600;
+  padding: .65rem 1.35rem; border-radius: 0;
+  font-size: .84rem; font-weight: 700;
   text-decoration: none; transition: all .12s;
-  border: 1px solid transparent; cursor: pointer;
-  font-family: inherit; letter-spacing: .03em;
+  border: 2px solid var(--rule); cursor: pointer;
+  font-family: inherit; letter-spacing: .05em;
+  text-transform: uppercase;
 }
-.btn-primary { background: var(--amber); color: #0e0b07; border-color: var(--amber); }
-.btn-primary:hover { background: #d4891a; border-color: #d4891a; }
-.btn-secondary { background: var(--bg3); color: var(--text); border-color: var(--border); }
-.btn-secondary:hover { border-color: var(--amber); color: var(--amber); }
+.btn-primary { background: var(--rule); color: var(--bg); border-color: var(--rule); }
+.btn-primary:hover { background: #333; border-color: #333; }
+.btn-secondary { background: transparent; color: var(--text); border-color: var(--rule); }
+.btn-secondary:hover { background: var(--rule); color: var(--bg); }
 
 /* ── Features ── */
 .features-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+  background: var(--rule);
+  border: 2px solid var(--rule);
 }
 @media (max-width: 640px) { .features-list { grid-template-columns: 1fr; } }
 .fitem {
   display: flex; gap: 1.25rem;
   padding: 1.5rem;
-  border: 1px solid var(--border);
-  margin: -1px 0 0 -1px;
+  background: var(--bg);
   transition: background .12s;
 }
 .fitem:hover { background: var(--bg2); }
@@ -177,24 +184,27 @@ h2 {
   line-height: 1.1; padding-top: .05rem;
   min-width: 2.4rem; transition: color .12s;
 }
-.fitem:hover .fnum { color: var(--amber); }
-.fitem h3 { font-size: .93rem; font-weight: 600; margin-bottom: .35rem; }
+.fitem:hover .fnum { color: var(--rule); }
+.fitem h3 { font-size: .93rem; font-weight: 700; margin-bottom: .35rem; }
 .fitem p { color: var(--muted); font-size: .84rem; line-height: 1.65; }
 .fitem p code { font-size: .8rem; }
 
 /* ── Platforms ── */
-.platforms-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+.platforms-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 2px; background: var(--rule); border: 2px solid var(--rule);
+}
 @media (max-width: 680px) { .platforms-grid { grid-template-columns: 1fr; } }
 .pcard {
-  background: var(--bg2); border: 1px solid var(--border);
+  background: var(--bg2);
   padding: 2rem 1.5rem;
-  margin: -1px 0 0 -1px;
 }
 .pcard-sys {
   display: inline-block;
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: .65rem; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--amber); margin-bottom: .8rem;
+  color: var(--text); font-weight: 700; margin-bottom: .8rem;
+  border-left: 3px solid var(--rule); padding-left: .5rem;
 }
 .pcard h3 {
   font-family: Georgia, 'Times New Roman', serif;
@@ -205,72 +215,74 @@ h2 {
 .badge {
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: .68rem; padding: .2rem .55rem;
-  background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+  background: var(--bg3); border: 1px solid var(--rule); color: var(--muted);
   letter-spacing: .04em;
 }
 
 /* ── Tabs ── */
-.tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; overflow-x: auto; }
+.tabs { display: flex; border-bottom: 2px solid var(--rule); margin-bottom: 1.5rem; overflow-x: auto; }
 .tab-btn {
   padding: .65rem 1.1rem; background: none; border: none;
-  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  border-bottom: 3px solid transparent; margin-bottom: -2px;
   color: var(--muted); cursor: pointer; font-size: .76rem;
   transition: all .12s; white-space: nowrap;
   font-family: 'Consolas', 'Courier New', monospace;
   letter-spacing: .08em; text-transform: uppercase;
 }
-.tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--text); font-weight: 700; }
 .tab-btn:hover:not(.active) { color: var(--text); }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
-.step-title { font-weight: 600; margin-bottom: .5rem; margin-top: 1.5rem; font-size: .9rem; }
+.step-title { font-weight: 700; margin-bottom: .5rem; margin-top: 1.5rem; font-size: .9rem; }
 .step-title:first-child { margin-top: 0; }
 
 /* ── Code ── */
 pre {
-  background: var(--bg3); border: 1px solid var(--border);
-  border-left: 3px solid var(--amber);
+  background: var(--bg3); border: 1px solid var(--rule2);
+  border-left: 4px solid var(--rule);
   padding: 1rem 1.25rem;
   overflow-x: auto; font-family: 'Consolas', 'Courier New', monospace;
   font-size: .83rem; line-height: 1.7; margin: .6rem 0;
 }
 code {
   font-family: 'Consolas', 'Courier New', monospace;
-  background: var(--bg3); border: 1px solid var(--border);
+  background: var(--bg3); border: 1px solid var(--rule2);
   padding: .1em .4em; font-size: .875em;
 }
-.cm { color: #504535; }
+.cm { color: #886655; font-style: italic; }
 .note {
   padding: .8rem 1rem .8rem 1.1rem; margin: 1rem 0;
-  font-size: .875rem; border-left: 3px solid;
+  font-size: .875rem; border-left: 4px solid;
 }
-.note-info { background: rgba(90,144,80,.07); border-color: var(--coord); color: #7ab87a; }
-.note-warn { background: rgba(192,124,26,.07); border-color: var(--amber); color: #c87e1a; }
+.note-info { background: #eef5ee; border-color: #2a5a2a; color: #1a3a1a; }
+.note-warn { background: #f7f2e2; border-color: #8a5a10; color: #4a3008; }
 
 /* ── Tech stack ── */
-.stack-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-.sitem {
-  background: var(--bg2); border: 1px solid var(--border);
-  padding: 1.25rem 1.5rem;
-  margin: -1px 0 0 -1px;
+.stack-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2px; background: var(--rule); border: 2px solid var(--rule);
 }
-.sitem h4 { font-size: .93rem; margin-bottom: .25rem; color: var(--text); }
+.sitem {
+  background: var(--bg2);
+  padding: 1.25rem 1.5rem;
+}
+.sitem h4 { font-size: .93rem; font-weight: 700; margin-bottom: .25rem; color: var(--text); }
 .sitem p { font-size: .8rem; color: var(--muted); line-height: 1.6; }
 
 /* ── Commits ── */
 .commits-list { display: flex; flex-direction: column; }
 .citem {
   display: flex; align-items: flex-start; gap: 1rem;
-  padding: .9rem 0; border-bottom: 1px solid var(--border);
+  padding: .9rem 0; border-bottom: 1px solid var(--rule2);
 }
 .citem:last-child { border-bottom: none; }
 .chash {
   font-family: 'Consolas', 'Courier New', monospace; font-size: .8rem;
-  color: var(--amber); text-decoration: none; flex-shrink: 0;
+  color: var(--text); text-decoration: none; flex-shrink: 0;
   padding: .2rem .5rem;
-  background: rgba(192,124,26,.08); border: 1px solid rgba(192,124,26,.2);
+  background: var(--bg3); border: 1px solid var(--rule);
 }
-.chash:hover { text-decoration: underline; }
+.chash:hover { background: var(--rule); color: var(--bg); }
 .cinfo { flex: 1; min-width: 0; }
 .cmsg { font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cmeta {
@@ -280,16 +292,16 @@ code {
 .commits-state { color: var(--muted); padding: 1.5rem 0; font-size: .9rem; }
 
 /* ── FAQ ── */
-.faq-list { display: flex; flex-direction: column; }
-.faq-item { border-bottom: 1px solid var(--border); }
+.faq-list { display: flex; flex-direction: column; border-top: 2px solid var(--rule); }
+.faq-item { border-bottom: 1px solid var(--rule2); }
 .faq-q {
   width: 100%; background: none; border: none; text-align: left;
   padding: 1.1rem 0; display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; color: var(--text); font-size: .9rem; cursor: pointer; font-weight: 500;
+  gap: 1rem; color: var(--text); font-size: .9rem; cursor: pointer; font-weight: 600;
   font-family: inherit; transition: color .12s;
 }
-.faq-q:hover { color: var(--amber); }
-.faq-chevron { flex-shrink: 0; color: var(--muted); transition: transform .2s; }
+.faq-q:hover { color: var(--muted); }
+.faq-chevron { flex-shrink: 0; color: var(--rule2); transition: transform .2s; }
 .faq-item.open .faq-chevron { transform: rotate(180deg); }
 .faq-a { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
 .faq-item.open .faq-a { max-height: 500px; }
@@ -297,13 +309,12 @@ code {
 .faq-a-inner strong { color: var(--text); }
 
 /* ── Screenshots ── */
-.screenshots-grid { display: flex; flex-direction: column; gap: 1.25rem; }
-.screenshots-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.screenshots-grid { display: flex; flex-direction: column; gap: 2px; }
+.screenshots-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
 .screenshot-frame {
-  background: var(--bg3); border: 1px solid var(--border);
-  overflow: hidden; transition: border-color .15s;
+  background: transparent;
+  overflow: hidden;
 }
-.screenshot-frame:hover { border-color: var(--amber); }
 .screenshot-frame img { display: block; width: 100%; height: auto; }
 .screenshot-caption { font-size: .8rem; color: var(--muted); margin-top: .6rem; }
 @media (max-width: 640px) { .screenshots-row { grid-template-columns: 1fr; } }
@@ -314,12 +325,12 @@ code {
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: .65rem; text-transform: uppercase; letter-spacing: .14em;
   color: var(--muted); margin-top: 1.25rem; margin-bottom: .4rem;
-  border-left: 2px solid var(--border); padding-left: .5rem;
+  border-left: 4px solid var(--rule); padding-left: .5rem; font-weight: 700;
 }
 
 /* ── Footer ── */
 footer {
-  border-top: 1px solid var(--border);
+  border-top: 3px solid var(--rule);
   padding: 3rem 0;
 }
 .footer-inner {
@@ -330,8 +341,8 @@ footer {
 .footer-left strong { color: var(--text); font-family: Georgia, serif; }
 .footer-links { display: flex; gap: 1.25rem; flex-wrap: wrap; }
 footer a { color: var(--muted); text-decoration: none; font-size: .82rem; transition: color .12s; }
-footer a:hover { color: var(--amber); }
-.footer-copy { font-size: .75rem; color: var(--dim); margin-top: .4rem; }
+footer a:hover { color: var(--text); text-decoration: underline; }
+.footer-copy { font-size: .75rem; color: var(--rule2); margin-top: .4rem; }
 </style>
 </head>
 <body>
@@ -342,6 +353,7 @@ footer a:hover { color: var(--amber); }
   <ul class="nav-links">
     <li><a href="#features">Можливості</a></li>
     <li><a href="#screenshots">Скріншоти</a></li>
+    <li><a href="#bulk-markers">Позначки</a></li>
     <li><a href="#platforms">Платформи</a></li>
     <li><a href="#install">Встановлення</a></li>
     <li><a href="#automation">Скрипти</a></li>
@@ -479,10 +491,61 @@ footer a:hover { color: var(--amber); }
 </div>
 </div>
 
+<!-- ── Bulk Markers ── -->
+<div class="section-wrap" id="bulk-markers">
+<div class="container">
+  <span class="section-num">03 — Масові позначки на карті</span>
+  <h2>Список координат — на карту одним кліком</h2>
+  <p class="section-desc">Відкрийте діалог «Позначки», вставте список точок — по одній на рядок у будь-якому форматі — і відобразіть їх на карті. Результат можна зберегти як автономний HTML-файл з інтерактивною картою Leaflet.</p>
+
+  <div class="screenshots-row" style="margin-bottom:2rem;">
+    <div>
+      <div class="screenshot-frame">
+        <img src="img/PointList.png" alt="Діалог Масові позначки" loading="lazy">
+      </div>
+      <p class="screenshot-caption">Діалог «Позначки» — помилкові рядки підсвічуються червоним, кількість валідних точок відображається внизу</p>
+    </div>
+    <div>
+      <p style="font-family:'Consolas','Courier New',monospace;font-size:.67rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;border-left:4px solid var(--rule);padding-left:.75rem;margin-bottom:.9rem;">Формат рядка</p>
+      <table style="width:100%;border-collapse:collapse;font-family:'Consolas','Courier New',monospace;font-size:.82rem;">
+        <tr style="border-bottom:1px solid var(--rule2);"><td style="padding:.45rem .5rem .45rem 0;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap;padding-right:1rem;">MGRS — Підпис</td><td style="padding:.45rem 0;color:var(--coord);">37U CP 94712 95805 — Точка А</td></tr>
+        <tr style="border-bottom:1px solid var(--rule2);"><td style="padding:.45rem .5rem .45rem 0;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap;padding-right:1rem;">DD Підпис</td><td style="padding:.45rem 0;color:var(--coord);">48.70639, 37.56889 Точка Б</td></tr>
+        <tr style="border-bottom:1px solid var(--rule2);"><td style="padding:.45rem .5rem .45rem 0;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap;padding-right:1rem;">DMS — Підпис</td><td style="padding:.45rem 0;color:var(--coord);">48°01'15"N 37°48'36"E — Позиція</td></tr>
+        <tr style="border-bottom:1px solid var(--rule2);"><td style="padding:.45rem .5rem .45rem 0;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap;padding-right:1rem;">UTM Підпис</td><td style="padding:.45rem 0;color:var(--coord);">37N 411286 5319318 КП</td></tr>
+        <tr><td style="padding:.45rem .5rem .45rem 0;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap;padding-right:1rem;">УСК-2000 Підпис</td><td style="padding:.45rem 0;color:var(--coord);">53-21447 74-11251 Ціль</td></tr>
+      </table>
+      <p style="font-size:.8rem;color:var(--muted);margin-top:.85rem;line-height:1.65;">Роздільник між координатами та підписом: <code>—</code> або <code>:</code> або пробіл. Підпис необов'язковий. Режим <b>«Спочатку опис»</b> — для списків виду «Назва — координати».</p>
+    </div>
+  </div>
+
+  <div>
+    <div class="screenshot-frame">
+      <img src="img/PointListMap.png" alt="Позначки на карті з таблицею MGRS" loading="lazy">
+    </div>
+    <p class="screenshot-caption">Карта з позначками та таблицею MGRS у правому куті — клік на рядок центрує карту на точці та відкриває спливаюче вікно з координатами</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--rule);border:2px solid var(--rule);margin-top:1.5rem;">
+    <div style="background:var(--bg);padding:1.25rem 1.5rem;">
+      <p style="font-size:.88rem;font-weight:700;margin-bottom:.35rem;">Показати на карті</p>
+      <p style="font-size:.82rem;color:var(--muted);line-height:1.6;">Відображає всі точки у головному вікні та автоматично масштабує карту під набір.</p>
+    </div>
+    <div style="background:var(--bg);padding:1.25rem 1.5rem;">
+      <p style="font-size:.88rem;font-weight:700;margin-bottom:.35rem;">Завантажити HTML</p>
+      <p style="font-size:.82rem;color:var(--muted);line-height:1.6;">Автономний HTML-файл з Leaflet-картою. Інтернет потрібен лише для тайлів — сам файл працює офлайн.</p>
+    </div>
+    <div style="background:var(--bg);padding:1.25rem 1.5rem;">
+      <p style="font-size:.88rem;font-weight:700;margin-bottom:.35rem;">Таблиця MGRS у HTML</p>
+      <p style="font-size:.82rem;color:var(--muted);line-height:1.6;">Напівпрозора таблиця у правому куті збереженого файлу з переліком усіх точок і посиланнями на них.</p>
+    </div>
+  </div>
+</div>
+</div>
+
 <!-- ── Platforms ── -->
 <div class="section-wrap" id="platforms">
 <div class="container">
-  <span class="section-num">03 — Платформи</span>
+  <span class="section-num">04 — Платформи</span>
   <h2>Кросплатформена утиліта</h2>
   <p class="section-desc">Один застосунок — три платформи. Ідентичний функціонал на macOS, Windows та Linux. CI/CD автоматично збирає та тестує кожну версію.</p>
   <div class="platforms-grid">
@@ -524,7 +587,7 @@ footer a:hover { color: var(--amber); }
 <!-- ── Install ── -->
 <div class="section-wrap" id="install">
 <div class="container">
-  <span class="section-num">04 — Встановлення</span>
+  <span class="section-num">05 — Встановлення</span>
   <h2>Швидкий старт</h2>
   <p class="section-desc">
     Завантажте готовий пакет зі сторінки
@@ -590,7 +653,7 @@ sudo apt-get install -f   <span class="cm"># підтягне залежност
 <!-- ── Automation ── -->
 <div class="section-wrap" id="automation">
 <div class="container">
-  <span class="section-num">05 — Автоматизація</span>
+  <span class="section-num">06 — Автоматизація</span>
   <h2>Степан у ваших скриптах</h2>
   <p class="section-desc">CLI та HTTP API дозволяють вбудувати конвертацію координат у будь-який pipeline — від простого Bash-скрипту до веб-застосунку.</p>
   <div class="tabs">
@@ -754,7 +817,7 @@ for q in coords:
 <!-- ── Build ── -->
 <div class="section-wrap" id="build">
 <div class="container">
-  <span class="section-num">06 — Збірка з вихідного коду</span>
+  <span class="section-num">07 — Збірка з вихідного коду</span>
   <h2>Зібрати самостійно</h2>
   <p class="section-desc">GeographicLib завантажується автоматично через CMake FetchContent при першій збірці. Потрібні лише Qt 6 і C++17-компілятор.</p>
 
@@ -824,7 +887,7 @@ cmake --build build --parallel $(nproc)
 <!-- ── Tech Stack ── -->
 <div class="section-wrap" id="stack">
 <div class="container">
-  <span class="section-num">07 — Технологічний стек</span>
+  <span class="section-num">08 — Технологічний стек</span>
   <h2>Побудований на перевіреному</h2>
   <p class="section-desc">Відкрите програмне забезпечення без зайніх залежностей. Все статично прилінковане або тягнеться автоматично.</p>
   <div class="stack-grid">
@@ -883,7 +946,7 @@ cmake --build build --parallel $(nproc)
 <!-- ── Changelog ── -->
 <div class="section-wrap" id="changelog">
 <div class="container">
-  <span class="section-num">08 — Останні зміни</span>
+  <span class="section-num">09 — Останні зміни</span>
   <h2>Що нового</h2>
   <p class="section-desc">Завантажується в реальному часі з GitHub API.</p>
   <div id="commits-container" class="commits-list">
@@ -900,7 +963,7 @@ cmake --build build --parallel $(nproc)
 <!-- ── FAQ ── -->
 <div class="section-wrap" id="faq">
 <div class="container">
-  <span class="section-num">09 — Часті запитання</span>
+  <span class="section-num">10 — Часті запитання</span>
   <h2>FAQ</h2>
   <p class="section-desc">Відповіді на найпоширеніші запитання.</p>
   <div class="faq-list">
