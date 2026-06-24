@@ -218,6 +218,11 @@ h2 {
   background: var(--bg3); border: 1px solid var(--rule); color: var(--muted);
   letter-spacing: .04em;
 }
+a.badge {
+  text-decoration: none; cursor: pointer;
+  transition: background .12s, color .12s;
+}
+a.badge:hover { background: var(--rule); color: var(--bg); }
 
 /* ── Tabs ── */
 .tabs { display: flex; border-bottom: 2px solid var(--rule); margin-bottom: 1.5rem; overflow-x: auto; }
@@ -554,7 +559,7 @@ footer a:hover { color: var(--text); text-decoration: underline; }
       <h3>macOS</h3>
       <p>macOS 11 Big Sur та новіші. Нативна підтримка Apple Silicon (M1/M2/M3) та Intel x86_64.</p>
       <div class="badges">
-        <span class="badge">DMG</span>
+        <span class="badge" id="badge-dmg">DMG</span>
         <span class="badge">Apple Silicon</span>
         <span class="badge">Intel x86_64</span>
       </div>
@@ -564,8 +569,8 @@ footer a:hover { color: var(--text); text-decoration: underline; }
       <h3>Windows</h3>
       <p>Windows 10 та Windows 11, 64-bit. Інсталятор автоматично завантажує VC++ Runtime, якщо потрібно.</p>
       <div class="badges">
-        <span class="badge">Setup.exe</span>
-        <span class="badge">Portable ZIP</span>
+        <span class="badge" id="badge-setup">Setup.exe</span>
+        <span class="badge" id="badge-zip">Portable ZIP</span>
         <span class="badge">x86_64</span>
       </div>
     </div>
@@ -574,10 +579,10 @@ footer a:hover { color: var(--text); text-decoration: underline; }
       <h3>Linux</h3>
       <p>Ubuntu 22.04+, Fedora 38+ та інші дистрибутиви. Чотири формати — на будь-який смак.</p>
       <div class="badges">
-        <span class="badge">AppImage</span>
-        <span class="badge">DEB</span>
-        <span class="badge">RPM</span>
-        <span class="badge">tar.xz</span>
+        <span class="badge" id="badge-appimage">AppImage</span>
+        <span class="badge" id="badge-deb">DEB</span>
+        <span class="badge" id="badge-rpm">RPM</span>
+        <span class="badge" id="badge-tarxz">tar.xz</span>
       </div>
     </div>
   </div>
@@ -1143,6 +1148,42 @@ async function loadCommits() {
 }
 
 loadCommits();
+
+async function loadReleaseLinks() {
+  try {
+    const r = await fetch('https://api.github.com/repos/' + REPO + '/releases/latest');
+    if (!r.ok) return;
+    const release = await r.json();
+    const assets = release.assets || [];
+
+    const find = (pred) => { const a = assets.find(pred); return a ? a.browser_download_url : null; };
+
+    const links = {
+      'badge-dmg':      find(a => a.name.endsWith('.dmg')),
+      'badge-setup':    find(a => a.name.toLowerCase().includes('setup') && a.name.endsWith('.exe')),
+      'badge-zip':      find(a => a.name.toLowerCase().includes('windows') && a.name.endsWith('.zip')),
+      'badge-appimage': find(a => a.name.endsWith('.AppImage')),
+      'badge-deb':      find(a => a.name.endsWith('.deb')),
+      'badge-rpm':      find(a => a.name.endsWith('.rpm')),
+      'badge-tarxz':    find(a => a.name.endsWith('.tar.xz')),
+    };
+
+    Object.entries(links).forEach(([id, url]) => {
+      if (!url) return;
+      const el = document.getElementById(id);
+      if (!el) return;
+      const a = document.createElement('a');
+      a.className = el.className;
+      a.id = el.id;
+      a.href = url;
+      a.textContent = el.textContent;
+      a.title = 'Завантажити ' + el.textContent;
+      el.replaceWith(a);
+    });
+  } catch (e) {}
+}
+
+loadReleaseLinks();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
