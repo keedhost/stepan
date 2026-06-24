@@ -78,6 +78,7 @@ qt_add_executable(Stepan
     src/SettingsDialog.cpp
     src/WebServer.cpp
     src/AboutDialog.cpp
+    src/BulkMarkersDialog.cpp
     resources/resources.qrc
 )
 
@@ -131,6 +132,7 @@ endif()
 if(UNIX AND NOT APPLE)
     set_target_properties(Stepan PROPERTIES OUTPUT_NAME "stepan")
 endif()
+
 
 
 # ── Install rules (used by CPack / deploy scripts) ────────────────────────────

@@ -247,7 +247,7 @@ std::optional<CoordinateData> CoordinateParser::tryDMS(const QString& input) {
     // Try splitting into two parts and passing to GeographicLib DMS parser
     // GeographicLib::DMS::DecodeLatLon takes two separate strings
     static const QRegularExpression splitRe(
-        R"(([NSns]?\s*\d[^NSnsEWew]*[NSns])\s+([EWew]?\s*\d[^NSnsEWew]*[EWew]))"
+        R"pat(^([NSns]?\s*\d[^NSnsEWew]*[NSns])\s+([EWew]?\s*\d[^NSnsEWew]*[EWew])$)pat"
     );
     auto splitMatch = splitRe.match(input);
     if (splitMatch.hasMatch()) {
@@ -264,7 +264,10 @@ std::optional<CoordinateData> CoordinateParser::tryDMS(const QString& input) {
 
     // Regex fallback for common format: 50°27'00.36"N 30°31'24.24"E
     static const QRegularExpression re(
-        R"((\d{1,3})[°\s]\s*(\d{1,2})['’\s]\s*(\d{1,2}(?:\.\d+)?)["”\s]*([NSns])\s+(\d{1,3})[°\s]\s*(\d{1,2})['’\s]\s*(\d{1,2}(?:\.\d+)?)["”\s]*([EWew]))"
+        "^(\\d{1,3})[\\x{00B0}\\s]\\s*(\\d{1,2})['\\x{2018}\\x{2019}\\s]"
+        "\\s*(\\d{1,2}(?:\\.\\d+)?)[\\x{201C}\\x{201D}\\x22\\s]*([NSns])\\s+"
+        "(\\d{1,3})[\\x{00B0}\\s]\\s*(\\d{1,2})['\\x{2018}\\x{2019}\\s]"
+        "\\s*(\\d{1,2}(?:\\.\\d+)?)[\\x{201C}\\x{201D}\\x22\\s]*([EWew])$"
     );
     const auto match = re.match(input);
     if (!match.hasMatch()) return std::nullopt;

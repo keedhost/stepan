@@ -16,12 +16,14 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(QWidget* parent = nullptr);
+    ~MainWindow() override;
 
     // Called from TrayManager to pre-fill the input and bring window to front
     void setInputText(const QString& text);
 
 protected:
     void closeEvent(QCloseEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 signals:
     void settingsChanged();
@@ -34,9 +36,12 @@ private slots:
     void onShowSettings();
     void onShowConsoleHelp();
     void onShowWebHelp();
+    void onShowBulkMarkersHelp();
+    void onShowPrivacy();
     void onShowAbout();
     void onWebServerStarted(quint16 port);
     void onWebServerStopped();
+    void onOpenBulkMarkers();
 
 private:
     // Input
@@ -67,6 +72,7 @@ private:
     std::optional<CoordinateData> m_current;
 
     void setupUi();
+    void applyStylesheet();
     void updateOutput(const std::optional<CoordinateData>& data);
     void setRow(int i, const QString& value);
     void copyToClipboard(const QString& text);

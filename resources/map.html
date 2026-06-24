@@ -133,6 +133,32 @@ function setLayer(key) {
     orthoLabelsVisible = true;
   }
 }
+
+// ── Bulk markers ──────────────────────────────────────────────────────────────
+var bulkMarkers = [];
+
+function clearBulkMarkers() {
+    bulkMarkers.forEach(function(m) { map.removeLayer(m); });
+    bulkMarkers = [];
+}
+
+function setBulkMarkers(arr) {
+    clearBulkMarkers();
+    arr.forEach(function(item) {
+        var lat = item[0], lon = item[1], label = item[2] || '', mgrs = item[3] || '';
+        var m = L.marker([lat, lon]).addTo(map);
+        var popup = label ? '<b>' + label + '</b><br>' : '';
+        if (mgrs) popup += '<code style="font-size:12px">' + mgrs + '</code><br>';
+        popup += '<small>' + lat.toFixed(6) + ', ' + lon.toFixed(6) + '</small>';
+        m.bindPopup(popup);
+        bulkMarkers.push(m);
+    });
+    if (bulkMarkers.length > 0) {
+        var group = L.featureGroup(bulkMarkers);
+        map.fitBounds(group.getBounds().pad(0.15));
+        showStatus(bulkMarkers.length + ' позначок');
+    }
+}
 </script>
 </body>
 </html>

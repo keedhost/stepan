@@ -21,122 +21,95 @@
 #include <QFont>
 #include <QSizePolicy>
 #include <QCloseEvent>
+#include <QEvent>
+#include <QPalette>
 #include <QMenuBar>
 #include <QMenu>
 #include <QDialog>
 #include <QTextBrowser>
+#include <QTextDocument>
+#include <QImage>
 #include <QDialogButtonBox>
 #include <QSettings>
 #include <QCoreApplication>
+#include <QPainter>
+#include <QTextCursor>
+#include "BulkMarkersDialog.h"
 
-static const char* kStyles = R"(
-QMainWindow {
-    background: #f0f0f0;
+static QString buildStylesheet(bool dark) {
+    const char* bd  = dark ? "#5a5a5a" : "#c8c8c8"; // border
+    const char* bg  = dark ? "#2a2a2a" : "#ffffff";  // input bg
+    const char* fg  = dark ? "#e8e8e8" : "#1a1a1a";  // input text
+    const char* bb  = dark ? "#3c3c3c" : "#f0f0f0";  // button bg
+    const char* bt  = dark ? "#e8e8e8" : "#1a1a1a";  // button text
+    const char* hv  = dark ? "#505050" : "#e8f0fe";  // hover bg
+    const char* pr  = dark ? "#5a5a5a" : "#c6d5f9";  // pressed bg
+    const char* pb  = dark ? "#242424" : "#f8f8f8";  // panel bg
+
+    return QString(
+        "QLineEdit#coordInput{"
+        " font-size:14px;padding:8px 12px;border:2px solid %1;"
+        " border-radius:6px;background:%2;color:%3;font-family:monospace;}"
+        "QLineEdit#coordInput:focus{border-color:#3d7cf5;}"
+        "QLabel#formatLabel{font-size:12px;padding:2px 4px;}"
+        "QPushButton#externalBtn{"
+        " padding:6px 14px;border:1px solid %1;border-radius:5px;"
+        " background:%4;color:%5;font-size:12px;}"
+        "QPushButton#externalBtn:hover{background:%6;border-color:#3d7cf5;}"
+        "QPushButton#externalBtn:pressed{background:%7;}"
+        "QPushButton#externalBtn:disabled{color:%1;}"
+        "QFrame#coordsPanel{background:%8;border:1px solid %1;border-radius:6px;}"
+        "QLabel.coordName{font-weight:bold;font-size:12px;min-width:50px;}"
+        "QLabel.coordValue{font-family:monospace;font-size:12px;padding:2px 6px;}"
+        "QPushButton#copyBtn{"
+        " padding:3px 10px;border:1px solid %1;border-radius:4px;"
+        " background:%4;color:%5;font-size:11px;min-width:70px;}"
+        "QPushButton#copyBtn:hover{background:%6;border-color:#5a5;}"
+        "QPushButton#copyBtn:pressed{background:%7;}"
+        "QPushButton#pasteBtn{"
+        " padding:8px 14px;border:2px solid %1;border-radius:6px;"
+        " background:%4;color:%5;font-size:14px;white-space:nowrap;}"
+        "QPushButton#pasteBtn:hover{background:%6;border-color:#3d7cf5;}"
+        "QPushButton#pasteBtn:pressed{background:%7;}"
+        "QLabel#mapSourceLabel{font-size:12px;}"
+        "QPushButton#mapBtnFirst,QPushButton#mapBtnMid,QPushButton#mapBtnLast{"
+        " padding:5px 11px;border:1px solid %1;border-radius:0;"
+        " background:%4;color:%5;font-size:12px;}"
+        "QPushButton#mapBtnFirst{border-top-left-radius:5px;border-bottom-left-radius:5px;border-right:none;}"
+        "QPushButton#mapBtnMid{border-right:none;}"
+        "QPushButton#mapBtnLast{border-top-right-radius:5px;border-bottom-right-radius:5px;}"
+        "QPushButton#mapBtnFirst:checked,QPushButton#mapBtnMid:checked,QPushButton#mapBtnLast:checked{"
+        " background:#3d7cf5;color:#ffffff;border-color:#2a5fd0;}"
+        "QPushButton#mapBtnFirst:hover:!checked,"
+        "QPushButton#mapBtnMid:hover:!checked,"
+        "QPushButton#mapBtnLast:hover:!checked{background:%6;border-color:#8ab0f5;}"
+    ).arg(bd, bg, fg, bb, bt, hv, pr, pb);
 }
-QLineEdit#coordInput {
-    font-size: 14px;
-    padding: 8px 12px;
-    border: 2px solid #ccc;
-    border-radius: 6px;
-    background: #fff;
-    font-family: monospace;
+
+void MainWindow::applyStylesheet() {
+    const bool dark = QApplication::palette().color(QPalette::Window).lightness() < 128;
+    setStyleSheet(buildStylesheet(dark));
+    if (m_webBanner) {
+        m_webBanner->setStyleSheet(dark
+            ? "background:#1a3a1a;color:#7adc7a;padding:4px 10px;border:1px solid #2a6a2a;border-radius:4px;font-size:12px;"
+            : "background:#e8f4e8;color:#1a6a1a;padding:4px 10px;border:1px solid #9acd9a;border-radius:4px;font-size:12px;");
+    }
 }
-QLineEdit#coordInput:focus {
-    border-color: #3d7cf5;
+
+void MainWindow::changeEvent(QEvent* event) {
+    QMainWindow::changeEvent(event);
+    if (event->type() == QEvent::PaletteChange)
+        applyStylesheet();
 }
-QLabel#formatLabel {
-    font-size: 12px;
-    padding: 2px 4px;
+
+MainWindow::~MainWindow() {
+    // Disconnect WebServer signals before QWidget destroys children.
+    // When QWidget::~QWidget() runs deleteChildren(), the MainWindow vtable is
+    // already replaced — assertObjectType<MainWindow> aborts on signal dispatch.
+    // Disconnecting here (while MainWindow vtable is still valid) prevents it.
+    if (m_webServer)
+        m_webServer->disconnect(this);
 }
-QPushButton#externalBtn {
-    padding: 6px 14px;
-    border: 1px solid #bbb;
-    border-radius: 5px;
-    background: #fff;
-    font-size: 12px;
-}
-QPushButton#externalBtn:hover  { background: #e8f0fe; border-color: #3d7cf5; }
-QPushButton#externalBtn:pressed { background: #c6d5f9; }
-QPushButton#externalBtn:disabled { color: #aaa; }
-QFrame#coordsPanel {
-    background: #fff;
-    border: 1px solid #dde;
-    border-radius: 6px;
-}
-QLabel.coordName {
-    font-weight: bold;
-    font-size: 12px;
-    color: #444;
-    min-width: 50px;
-}
-QLabel.coordValue {
-    font-family: monospace;
-    font-size: 12px;
-    color: #111;
-    padding: 2px 6px;
-}
-QPushButton#copyBtn {
-    padding: 3px 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: #f8f8f8;
-    font-size: 11px;
-    color: #555;
-    min-width: 70px;
-}
-QPushButton#copyBtn:hover  { background: #e0ffe0; border-color: #5a5; color: #333; }
-QPushButton#copyBtn:pressed { background: #c0f0c0; }
-QPushButton#pasteBtn {
-    padding: 8px 14px;
-    border: 2px solid #bbb;
-    border-radius: 6px;
-    background: #fff;
-    font-size: 14px;
-    color: #333;
-    white-space: nowrap;
-}
-QPushButton#pasteBtn:hover  { background: #e8f0fe; border-color: #3d7cf5; color: #1a52c0; }
-QPushButton#pasteBtn:pressed { background: #c6d5f9; }
-QLabel#mapSourceLabel {
-    font-size: 12px;
-    color: #555;
-}
-QPushButton#mapBtnFirst,
-QPushButton#mapBtnMid,
-QPushButton#mapBtnLast {
-    padding: 5px 11px;
-    border: 1px solid #bbb;
-    border-radius: 0;
-    background: #f5f5f5;
-    font-size: 12px;
-    color: #333;
-}
-QPushButton#mapBtnFirst {
-    border-top-left-radius: 5px;
-    border-bottom-left-radius: 5px;
-    border-right: none;
-}
-QPushButton#mapBtnMid {
-    border-right: none;
-}
-QPushButton#mapBtnLast {
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
-}
-QPushButton#mapBtnFirst:checked,
-QPushButton#mapBtnMid:checked,
-QPushButton#mapBtnLast:checked {
-    background: #3d7cf5;
-    color: #ffffff;
-    border-color: #2a5fd0;
-}
-QPushButton#mapBtnFirst:hover:!checked,
-QPushButton#mapBtnMid:hover:!checked,
-QPushButton#mapBtnLast:hover:!checked {
-    background: #e8f0fe;
-    border-color: #8ab0f5;
-}
-)";
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -144,8 +117,8 @@ MainWindow::MainWindow(QWidget* parent)
     setWindowTitle("Степан — твій друг в системі координат");
     setMinimumSize(620, 700);
     resize(750, 850);
-    setStyleSheet(kStyles);
     setupUi();
+    applyStylesheet();
 
     m_webServer = new WebServer(this);
     connect(m_webServer, &WebServer::started, this, &MainWindow::onWebServerStarted);
@@ -168,6 +141,10 @@ void MainWindow::setupUi() {
     connect(cliAction, &QAction::triggered, this, &MainWindow::onShowConsoleHelp);
     auto* webHelpAction = helpMenu->addAction(appTr("Веб-інтерфейс...", "Web Interface..."));
     connect(webHelpAction, &QAction::triggered, this, &MainWindow::onShowWebHelp);
+    auto* bulkHelpAction = helpMenu->addAction(appTr("Масові позначки...", "Bulk Markers..."));
+    connect(bulkHelpAction, &QAction::triggered, this, &MainWindow::onShowBulkMarkersHelp);
+    auto* privacyAction = helpMenu->addAction(appTr("Безпека даних...", "Data Privacy..."));
+    connect(privacyAction, &QAction::triggered, this, &MainWindow::onShowPrivacy);
     helpMenu->addSeparator();
     auto* aboutAction = helpMenu->addAction(appTr("Про програму...", "About Stepan..."));
     connect(aboutAction, &QAction::triggered, this, &MainWindow::onShowAbout);
@@ -193,7 +170,6 @@ void MainWindow::setupUi() {
     auto* pasteBtn = new QPushButton(appTr("Вставити", "Paste"), central);
     pasteBtn->setObjectName("pasteBtn");
     pasteBtn->setToolTip(appTr("Вставити координату з буфера обміну (Ctrl+V)", "Paste coordinate from clipboard (Ctrl+V)"));
-    pasteBtn->setFixedHeight(m_input->sizeHint().height());
 
     auto* inputRow = new QHBoxLayout();
     inputRow->setSpacing(6);
@@ -211,7 +187,7 @@ void MainWindow::setupUi() {
     // --- Format detection label ---
     m_formatLbl = new QLabel(appTr("Введіть координати вище", "Enter coordinates above"), central);
     m_formatLbl->setObjectName("formatLabel");
-    m_formatLbl->setStyleSheet("color: #888; font-style: italic; font-size: 12px;");
+    m_formatLbl->setStyleSheet("font-style: italic; font-size: 12px;");
     root->addWidget(m_formatLbl);
 
     // --- External map buttons ---
@@ -230,12 +206,6 @@ void MainWindow::setupUi() {
     btnRow->addWidget(m_osmBtn);
     btnRow->addStretch();
     root->addLayout(btnRow);
-
-    // --- Separator ---
-    auto* sep1 = new QFrame(central);
-    sep1->setFrameShape(QFrame::HLine);
-    sep1->setFrameShadow(QFrame::Sunken);
-    root->addWidget(sep1);
 
     // --- Coordinates output panel ---
     m_coordsPanel = new QFrame(central);
@@ -258,11 +228,11 @@ void MainWindow::setupUi() {
 
         m_rows[i].nameLbl = new QLabel(rowNames[i] + ":", rowWidget);
         m_rows[i].nameLbl->setProperty("class", "coordName");
-        m_rows[i].nameLbl->setStyleSheet("font-weight: bold; font-size: 12px; color: #444; min-width: 50px;");
+        m_rows[i].nameLbl->setStyleSheet("font-weight: bold; font-size: 12px; min-width: 50px;");
         m_rows[i].nameLbl->setFixedWidth(55);
 
         m_rows[i].valueLbl = new QLabel("—", rowWidget);
-        m_rows[i].valueLbl->setStyleSheet("font-family: monospace; font-size: 12px; color: #111; padding: 2px 6px;");
+        m_rows[i].valueLbl->setStyleSheet("font-family: monospace; font-size: 12px; padding: 2px 6px;");
         m_rows[i].valueLbl->setTextInteractionFlags(Qt::TextSelectableByMouse);
         m_rows[i].valueLbl->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
@@ -325,7 +295,14 @@ void MainWindow::setupUi() {
 
     mapHeader->addWidget(mapLbl);
     mapHeader->addLayout(segRow);
+
+    auto* bulkMarkersBtn = new QPushButton(appTr("📍 Позначки...", "📍 Markers..."), central);
+    bulkMarkersBtn->setObjectName("externalBtn");
+    bulkMarkersBtn->setToolTip(appTr(
+        "Відкрити масовий ввід координат та позначок на карті",
+        "Open bulk coordinate markers on map"));
     mapHeader->addStretch();
+    mapHeader->addWidget(bulkMarkersBtn);
     root->addLayout(mapHeader);
 
     // --- Map widget ---
@@ -336,9 +313,6 @@ void MainWindow::setupUi() {
 
     // --- Web server banner ---
     m_webBanner = new QLabel(central);
-    m_webBanner->setStyleSheet(
-        "background: #e8f4e8; color: #1a6a1a; padding: 4px 10px; "
-        "border: 1px solid #9acd9a; border-radius: 4px; font-size: 12px;");
     m_webBanner->setOpenExternalLinks(true);
     m_webBanner->setWordWrap(true);
     m_webBanner->setVisible(false);
@@ -355,6 +329,8 @@ void MainWindow::setupUi() {
             this, [this](QAbstractButton* btn) {
         onMapSourceChanged(btn->property("mapKey").toString());
     });
+    connect(bulkMarkersBtn, &QPushButton::clicked,
+            this, &MainWindow::onOpenBulkMarkers);
 
     // Restore last-used map source
     const QString savedMap = QSettings().value("defaultMap", "streets").toString();
@@ -920,7 +896,440 @@ $ curl "http://localhost:8080/api/convert?q=invalid"
     dlg->exec();
 }
 
+// QTextBrowser subclass that loads images from QRC via the "qrc" scheme
+// Fullscreen overlay shown when the user clicks a help image
+class ImageLightbox : public QWidget {
+    QPixmap m_px;
+public:
+    ImageLightbox(const QImage& img, QWidget* parent) : QWidget(parent) {
+        setAttribute(Qt::WA_DeleteOnClose);
+        setGeometry(parent->rect());
+
+        QSize maxSz = parent->size() - QSize(60, 60);
+        m_px = QPixmap::fromImage(img);
+        if (m_px.width() > maxSz.width() || m_px.height() > maxSz.height())
+            m_px = m_px.scaled(maxSz, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+        setCursor(Qt::PointingHandCursor);
+        setFocusPolicy(Qt::StrongFocus);
+        show();
+        raise();
+        setFocus();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter p(this);
+        p.fillRect(rect(), QColor(0, 0, 0, 205));
+        p.drawPixmap((width() - m_px.width()) / 2,
+                     (height() - m_px.height()) / 2, m_px);
+        p.setPen(QColor(255, 255, 255, 130));
+        p.setFont(QFont("sans-serif", 10));
+        p.drawText(rect().adjusted(0, 0, -10, -8),
+                   Qt::AlignRight | Qt::AlignBottom,
+                   appTr("Натисніть для закриття  ·  Esc",
+                         "Click to close  ·  Esc"));
+    }
+
+    void mousePressEvent(QMouseEvent*) override { close(); }
+
+    void keyPressEvent(QKeyEvent* e) override {
+        if (e->key() == Qt::Key_Escape) close();
+        else QWidget::keyPressEvent(e);
+    }
+};
+
+class BulkHelpBrowser : public QTextBrowser {
+public:
+    explicit BulkHelpBrowser(QWidget* parent = nullptr) : QTextBrowser(parent) {
+        viewport()->setMouseTracking(true);
+    }
+
+    QVariant loadResource(int type, const QUrl& url) override {
+        if (type == QTextDocument::ImageResource && url.scheme() == "qrc") {
+            QImage img(":" + url.path());
+            if (!img.isNull()) {
+                if (img.width() > 640)
+                    img = img.scaledToWidth(640, Qt::SmoothTransformation);
+                return img;
+            }
+        }
+        return QTextBrowser::loadResource(type, url);
+    }
+
+protected:
+    void mousePressEvent(QMouseEvent* e) override {
+        if (e->button() == Qt::LeftButton) {
+            auto fmt = charFormatAt(e->pos());
+            if (fmt.isImageFormat()) {
+                QImage img(":" + QUrl(fmt.toImageFormat().name()).path());
+                if (!img.isNull()) {
+                    new ImageLightbox(img, window());
+                    return;
+                }
+            }
+        }
+        QTextBrowser::mousePressEvent(e);
+    }
+
+    void mouseMoveEvent(QMouseEvent* e) override {
+        QTextBrowser::mouseMoveEvent(e);
+        if (charFormatAt(e->pos()).isImageFormat())
+            viewport()->setCursor(Qt::PointingHandCursor);
+    }
+
+private:
+    QTextCharFormat charFormatAt(const QPoint& pos) {
+        QTextCursor c = cursorForPosition(pos);
+        QTextCharFormat fmt = c.charFormat();
+        if (!fmt.isImageFormat()) {
+            c.movePosition(QTextCursor::PreviousCharacter);
+            fmt = c.charFormat();
+        }
+        return fmt;
+    }
+};
+
+void MainWindow::onShowBulkMarkersHelp() {
+    static const QString kHtmlUk = R"(
+<style>
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; line-height: 1.6; }
+  h2    { margin-bottom: 6px; }
+  h3    { margin: 14px 0 4px; color: #2a5a9a; }
+  p     { margin: 4px 0 8px; }
+  ul    { margin: 4px 0 8px; padding-left: 20px; }
+  li    { margin-bottom: 3px; }
+  code  { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .img-wrap { margin: 12px 0; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+  .img-wrap img { max-width: 100%; display: block; }
+  table { border-collapse: collapse; width: 100%; margin: 4px 0 8px; }
+  td    { padding: 3px 8px; vertical-align: top; }
+  td:first-child { white-space: nowrap; font-weight: bold; font-size: 12px; color: #444; }
+</style>
+<h2>Масові позначки на карті</h2>
+<p>Функція дозволяє завантажити список точок у будь-якому форматі координат,
+відобразити їх на карті та зберегти у вигляді HTML-файлу з інтерактивною картою.</p>
+
+<h3>Як відкрити</h3>
+<p>Кнопка <b>Позначки</b> у нижній частині головного вікна програми.</p>
+
+<div class="img-wrap"><img src="qrc:///doc/PointList.png"></div>
+
+<h3>Введення координат</h3>
+<p>Кожен рядок — одна точка. Рядки з помилками підсвічуються
+<span style="color:#c00; font-weight:bold">червоним кольором</span>.
+Кількість коректних та некоректних рядків відображається під полем введення.</p>
+
+<h3>Порядок: «Спочатку координати» / «Спочатку опис»</h3>
+<p>Визначає, де у рядку знаходиться підпис — після координат (стандартний режим)
+або перед ними (зручно для списків виду «Назва об'єкта — координати»).</p>
+
+<h3>Формат рядка</h3>
+<table>
+  <tr><td>MGRS - Підпис</td>         <td><code>37U CP 94712 95805 - Точка А</code></td></tr>
+  <tr><td>DD Підпис</td>             <td><code>48.70639, 37.56889 Точка Б</code></td></tr>
+  <tr><td>DMS - Підпис</td>          <td><code>48°01'15"N 37°48'36"E - Позиція</code></td></tr>
+  <tr><td>UTM Підпис</td>            <td><code>37N 411286 5319318 КП</code></td></tr>
+  <tr><td>УСК-2000 Підпис</td>       <td><code>53-21447 74-11251 Ціль</code></td></tr>
+  <tr><td>Підпис - MGRS</td>         <td><code>Нафтобаза - 37U CP 94712 95805</code> (режим «Спочатку опис»)</td></tr>
+</table>
+<p>Роздільник між координатами та підписом: <code>&nbsp;-&nbsp;</code>
+або <code>:&nbsp;</code> або пробіл. Підпис є необов'язковим.</p>
+
+<h3>Кнопки</h3>
+<table>
+  <tr><td>Показати на карті</td>
+      <td>Відображає всі точки у головному вікні та автоматично масштабує карту.</td></tr>
+  <tr><td>Завантажити HTML</td>
+      <td>Зберігає HTML-файл з інтерактивною картою (Leaflet, OpenStreetMap). Відкрийте у браузері — інтернет потрібен лише для завантаження тайлів карти.</td></tr>
+  <tr><td>Очистити карту</td>
+      <td>Прибирає всі позначки з карти у головному вікні програми.</td></tr>
+</table>
+
+<h3>Таблиця MGRS-координат у HTML-файлі</h3>
+<p>Якщо увімкнено опцію <b>«Показати таблицю MGRS-координат у завантаженому HTML-файлі»</b>,
+у збереженому файлі з'явиться таблиця у правому нижньому куті зі списком усіх точок.</p>
+
+<div class="img-wrap"><img src="qrc:///doc/PointListMap.png"></div>
+
+<ul>
+  <li>Таблиця напівпрозора за замовчуванням — наведіть курсор, щоб побачити її повністю.</li>
+  <li>Клік на рядок таблиці — карта центрується на точці, відкривається спливаюче вікно з координатами та MGRS.</li>
+  <li>Клік на будь-яку позначку — відображається підпис, MGRS-координата та десяткові координати.</li>
+</ul>
+)";
+
+    static const QString kHtmlEn = R"(
+<style>
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; line-height: 1.6; }
+  h2    { margin-bottom: 6px; }
+  h3    { margin: 14px 0 4px; color: #2a5a9a; }
+  p     { margin: 4px 0 8px; }
+  ul    { margin: 4px 0 8px; padding-left: 20px; }
+  li    { margin-bottom: 3px; }
+  code  { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .img-wrap { margin: 12px 0; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+  .img-wrap img { max-width: 100%; display: block; }
+  table { border-collapse: collapse; width: 100%; margin: 4px 0 8px; }
+  td    { padding: 3px 8px; vertical-align: top; }
+  td:first-child { white-space: nowrap; font-weight: bold; font-size: 12px; color: #444; }
+</style>
+<h2>Bulk Markers</h2>
+<p>This feature lets you load a list of coordinates in any supported format,
+display them on the map, and save as a standalone HTML file with an interactive map.</p>
+
+<h3>How to open</h3>
+<p>Click the <b>Markers</b> button at the bottom of the main window.</p>
+
+<div class="img-wrap"><img src="qrc:///doc/PointList.png"></div>
+
+<h3>Entering coordinates</h3>
+<p>One point per line. Lines with errors are highlighted
+<span style="color:#c00; font-weight:bold">in red</span>.
+The count of valid and invalid lines is shown below the input field.</p>
+
+<h3>Order: «Coords first» / «Label first»</h3>
+<p>Choose whether the label comes after the coordinates (default) or before them
+(convenient for lists like «Object name — coordinates»).</p>
+
+<h3>Line format</h3>
+<table>
+  <tr><td>MGRS - Label</td>          <td><code>37U CP 94712 95805 - Point A</code></td></tr>
+  <tr><td>DD Label</td>              <td><code>48.70639, 37.56889 Point B</code></td></tr>
+  <tr><td>DMS - Label</td>           <td><code>48°01'15"N 37°48'36"E - Position</code></td></tr>
+  <tr><td>UTM Label</td>             <td><code>37N 411286 5319318 CP</code></td></tr>
+  <tr><td>USK-2000 Label</td>        <td><code>53-21447 74-11251 Target</code></td></tr>
+  <tr><td>Label - MGRS</td>          <td><code>Refinery - 37U CP 94712 95805</code> (Label first mode)</td></tr>
+</table>
+<p>Separator between coordinates and label: <code>&nbsp;-&nbsp;</code>
+or <code>:&nbsp;</code> or space. Label is optional.</p>
+
+<h3>Buttons</h3>
+<table>
+  <tr><td>Show on map</td>
+      <td>Displays all valid points in the main window and auto-fits the map view.</td></tr>
+  <tr><td>Download HTML</td>
+      <td>Saves an HTML file with an interactive map (Leaflet, OpenStreetMap). Internet is only needed for loading map tiles.</td></tr>
+  <tr><td>Clear map</td>
+      <td>Removes all bulk markers from the map in the main window.</td></tr>
+</table>
+
+<h3>MGRS table in the HTML file</h3>
+<p>When <b>«Show MGRS coordinate table in the downloaded HTML file»</b> is enabled,
+the saved file will include a table panel in the bottom-right corner listing all points.</p>
+
+<div class="img-wrap"><img src="qrc:///doc/PointListMap.png"></div>
+
+<ul>
+  <li>The table is semi-transparent by default — hover over it to see it fully.</li>
+  <li>Click a row — the map centers on that point and a popup opens with coordinates and MGRS.</li>
+  <li>Click any marker — shows label, MGRS coordinate, and decimal coordinates.</li>
+</ul>
+)";
+
+    const QString& kHtml = appLangIsEnglish() ? kHtmlEn : kHtmlUk;
+
+    auto* dlg = new QDialog(this);
+    dlg->setWindowTitle(appTr("Масові позначки", "Bulk Markers"));
+    dlg->resize(680, 600);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+
+    auto* browser = new BulkHelpBrowser(dlg);
+    browser->setReadOnly(true);
+    browser->setOpenExternalLinks(false);
+    browser->setHtml(kHtml);
+
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dlg);
+    connect(buttons, &QDialogButtonBox::rejected, dlg, &QDialog::accept);
+
+    auto* layout = new QVBoxLayout(dlg);
+    layout->addWidget(browser);
+    layout->addWidget(buttons);
+
+    dlg->exec();
+}
+
+void MainWindow::onShowPrivacy() {
+    static const QString kHtmlUk = R"prv(
+<style>
+  body { font-family: sans-serif; font-size: 13px; margin: 0; }
+  h2   { margin-bottom: 6px; }
+  h3   { margin: 14px 0 4px; color: #2a5a9a; }
+  ul   { margin: 4px 0 4px 0; padding-left: 20px; }
+  li   { margin-bottom: 3px; }
+  .ok  { color: #2a7a2a; font-weight: bold; }
+  .warn{ color: #7a5a00; font-weight: bold; }
+  .key { font-family: monospace; background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .box { background: #f0f6e8; border: 1px solid #b8d4a0; border-radius: 5px; padding: 8px 12px; margin-top: 10px; }
+  .mil { background: #fff8e8; border: 1px solid #e0b840; border-radius: 5px; padding: 10px 14px; margin-bottom: 12px; }
+</style>
+<h2>Безпека даних</h2>
+
+<div class="mil">
+<b>Цей застосунок розроблений насамперед для військових.</b><br>
+Координати — це оперативна інформація. Тому безпека даних тут не формальність,
+а принципова вимога до архітектури програми:<br><br>
+<span class="ok">✓</span> &nbsp;Жодна введена координата не залишає пристрій без вашого явного дозволу.<br>
+<span class="ok">✓</span> &nbsp;Програма не має власних серверів і не телефонує додому.<br>
+<span class="ok">✓</span> &nbsp;Веб-сервер вимкнений за замовчуванням; якщо увімкнено — лише локальна мережа.<br>
+<span class="warn">⚠</span> &nbsp;Карта завантажує тайли з зовнішніх серверів — деталі нижче.
+</div>
+
+<p>Нижче — повний опис того, що відбувається з вашими даними.</p>
+
+<h3>Що зберігається локально</h3>
+<p>Лише налаштування програми, через стандартний механізм ОС (<span class="key">QSettings</span>):</p>
+<ul>
+  <li>Джерело карти за замовчуванням (<span class="key">defaultMap</span>)</li>
+  <li>Стиль іконки трею (<span class="key">trayIconStyle</span>)</li>
+  <li>Поведінка при закритті вікна (<span class="key">closeToTray</span>)</li>
+  <li>Мова інтерфейсу (<span class="key">language</span>)</li>
+  <li>Запускати мінімізованим (<span class="key">startMinimized</span>)</li>
+  <li>Параметри веб-сервера: увімкнено / адреса / порт (<span class="key">webEnabled</span>, <span class="key">webAddress</span>, <span class="key">webPort</span>)</li>
+  <li>Автозапуск при вході в систему — через засоби ОС</li>
+</ul>
+<p><span class="ok">✓</span> &nbsp;Введені координати <b>не зберігаються</b> — ні в файлах, ні в налаштуваннях.</p>
+
+<h3>Що не збирається ніколи</h3>
+<ul>
+  <li>Телеметрія та аналітика</li>
+  <li>Журнали використання</li>
+  <li>Геолокація пристрою</li>
+  <li>Будь-які персональні дані</li>
+</ul>
+
+<h3>Зовнішні сервіси (карти)</h3>
+<p>При роботі з картою координати або область перегляду можуть передаватись стороннім серверам:</p>
+<ul>
+  <li><span class="warn">⚠</span> &nbsp;<b>Тайли карти</b> — завантажуються з серверів OpenStreetMap, Esri або інших
+      залежно від вибраного джерела. Ці запити містять координати видимої ділянки карти.</li>
+  <li><span class="warn">⚠</span> &nbsp;<b>«Відкрити в Google Maps / OpenStreetMap»</b> — відкриває у вашому браузері URL
+      з поточними координатами. Дані обробляються відповідно до політики конфіденційності Google та OpenStreetMap.</li>
+</ul>
+
+<h3>Веб-сервер (якщо увімкнено)</h3>
+<ul>
+  <li>Веб-сервер слухає виключно на вашому пристрої або у локальній мережі — він <b>не передає дані в інтернет</b>.</li>
+  <li>Якщо обрано режим <b>«Всі мережі (0.0.0.0)»</b>, координати, що надсилаються через HTTP-запити,
+      будуть доступні іншим пристроям у вашій локальній мережі.</li>
+  <li>Для максимальної приватності використовуйте режим <b>«Лише локальний (127.0.0.1)»</b>.</li>
+</ul>
+
+<div class="box">
+  <span class="ok">✓</span> &nbsp;Програма не має власних серверів і не відправляє дані розробнику.
+  Весь код відкритий і доступний для перевірки.
+</div>
+)prv";
+
+    static const QString kHtmlEn = R"prv(
+<style>
+  body { font-family: sans-serif; font-size: 13px; margin: 0; }
+  h2   { margin-bottom: 6px; }
+  h3   { margin: 14px 0 4px; color: #2a5a9a; }
+  ul   { margin: 4px 0 4px 0; padding-left: 20px; }
+  li   { margin-bottom: 3px; }
+  .ok  { color: #2a7a2a; font-weight: bold; }
+  .warn{ color: #7a5a00; font-weight: bold; }
+  .key { font-family: monospace; background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .box { background: #f0f6e8; border: 1px solid #b8d4a0; border-radius: 5px; padding: 8px 12px; margin-top: 10px; }
+  .mil { background: #fff8e8; border: 1px solid #e0b840; border-radius: 5px; padding: 10px 14px; margin-bottom: 12px; }
+</style>
+<h2>Data Privacy</h2>
+
+<div class="mil">
+<b>This app is built primarily for military use.</b><br>
+Coordinates are operational information. Data security here is not a formality —
+it is a core architectural requirement:<br><br>
+<span class="ok">✓</span> &nbsp;No entered coordinate leaves the device without your explicit action.<br>
+<span class="ok">✓</span> &nbsp;The app has no backend servers and never phones home.<br>
+<span class="ok">✓</span> &nbsp;The web server is off by default; when enabled — local network only.<br>
+<span class="warn">⚠</span> &nbsp;The map loads tiles from external servers — see details below.
+</div>
+
+<p>Below is a full account of what happens to your data.</p>
+
+<h3>What is stored locally</h3>
+<p>Only application preferences, via the OS standard mechanism (<span class="key">QSettings</span>):</p>
+<ul>
+  <li>Default map source (<span class="key">defaultMap</span>)</li>
+  <li>Tray icon style (<span class="key">trayIconStyle</span>)</li>
+  <li>Close-to-tray behaviour (<span class="key">closeToTray</span>)</li>
+  <li>Interface language (<span class="key">language</span>)</li>
+  <li>Start minimized flag (<span class="key">startMinimized</span>)</li>
+  <li>Web server settings: enabled / address / port (<span class="key">webEnabled</span>, <span class="key">webAddress</span>, <span class="key">webPort</span>)</li>
+  <li>Launch at login — managed via OS facilities</li>
+</ul>
+<p><span class="ok">✓</span> &nbsp;Entered coordinates are <b>never stored</b> — not in files, not in settings.</p>
+
+<h3>What is never collected</h3>
+<ul>
+  <li>Telemetry or analytics</li>
+  <li>Usage logs</li>
+  <li>Device location</li>
+  <li>Any personal data</li>
+</ul>
+
+<h3>Third-party services (maps)</h3>
+<p>When using the map, coordinates or the viewed area may be sent to third-party servers:</p>
+<ul>
+  <li><span class="warn">⚠</span> &nbsp;<b>Map tiles</b> — downloaded from OpenStreetMap, Esri or other servers
+      depending on the selected source. These requests include the coordinates of the visible map area.</li>
+  <li><span class="warn">⚠</span> &nbsp;<b>"Open in Google Maps / OpenStreetMap"</b> — opens a URL in your browser
+      containing the current coordinates. Data is handled according to Google's and OpenStreetMap's privacy policies.</li>
+</ul>
+
+<h3>Web server (if enabled)</h3>
+<ul>
+  <li>The web server listens only on your device or local network — it <b>does not send data to the internet</b>.</li>
+  <li>If <b>"All networks (0.0.0.0)"</b> is selected, coordinates sent via HTTP requests will be
+      visible to other devices on your local network.</li>
+  <li>For maximum privacy, use <b>"Local only (127.0.0.1)"</b>.</li>
+</ul>
+
+<div class="box">
+  <span class="ok">✓</span> &nbsp;The app has no backend servers and sends no data to the developer.
+  The full source code is open and available for review.
+</div>
+)prv";
+
+    const QString& kHtml = appLangIsEnglish() ? kHtmlEn : kHtmlUk;
+
+    auto* dlg = new QDialog(this);
+    dlg->setWindowTitle(appTr("Безпека даних", "Data Privacy"));
+    dlg->resize(560, 560);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+
+    auto* browser = new QTextBrowser(dlg);
+    browser->setHtml(kHtml);
+    browser->setReadOnly(true);
+
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dlg);
+    connect(buttons, &QDialogButtonBox::rejected, dlg, &QDialog::accept);
+
+    auto* layout = new QVBoxLayout(dlg);
+    layout->addWidget(browser);
+    layout->addWidget(buttons);
+
+    dlg->exec();
+}
+
 void MainWindow::onShowAbout() {
     AboutDialog dlg(this);
     dlg.exec();
+}
+
+void MainWindow::onOpenBulkMarkers() {
+    auto* dlg = new BulkMarkersDialog(this);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    connect(dlg, &BulkMarkersDialog::markersReady,
+            this, [this](const QVector<BulkMarker>& markers) {
+        m_mapWidget->setBulkMarkers(markers);
+    });
+    connect(dlg, &BulkMarkersDialog::clearMarkersRequested,
+            this, [this]() {
+        m_mapWidget->clearBulkMarkers();
+    });
+    dlg->show();
+    dlg->raise();
+    dlg->activateWindow();
 }

@@ -115,7 +115,10 @@ document.getElementById('coord').addEventListener('keydown',e=>{if(e.key==='Ente
 
 WebServer::WebServer(QObject* parent) : QObject(parent) {}
 
-WebServer::~WebServer() { stop(); }
+WebServer::~WebServer() {
+    QSignalBlocker blocker(this);
+    stop();
+}
 
 bool WebServer::start(const QString& host, quint16 port) {
     stop();

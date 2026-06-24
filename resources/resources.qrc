@@ -8,6 +8,12 @@
         <file>leaflet/marker-shadow.png</file>
     </qresource>
 
+    <!-- Скріншоти для довідки -->
+    <qresource prefix="/doc">
+        <file alias="PointList.png">../docs/img/PointList.png</file>
+        <file alias="PointListMap.png">../docs/img/PointListMap.png</file>
+    </qresource>
+
     <!-- Кольорові іконки (для значка застосунку) -->
     <qresource prefix="/icons/color">
         <file alias="16.png">../icons/icon-16x16.png</file>

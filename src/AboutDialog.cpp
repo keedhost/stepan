@@ -39,8 +39,6 @@ static QString aboutHtml() {
       <td><a href="https://wa.me/380961239268">wa.me/380961239268</a></td></tr>
   <tr><td><b>Facebook:</b></td>
       <td><a href="https://www.facebook.com/kondratyev.andriy">facebook.com/kondratyev.andriy</a></td></tr>
-  <tr><td><b>LinkedIn:</b></td>
-      <td><a href="https://www.linkedin.com/in/andriy-kondratyev/">linkedin.com/in/andriy-kondratyev</a></td></tr>
   <tr><td><b>Source code:</b></td>
       <td><a href="https://github.com/keedhost/stepan">github.com/keedhost/stepan</a></td></tr>
 </table>
@@ -84,8 +82,6 @@ static QString aboutHtml() {
       <td><a href="https://wa.me/380961239268">wa.me/380961239268</a></td></tr>
   <tr><td><b>Facebook:</b></td>
       <td><a href="https://www.facebook.com/kondratyev.andriy">facebook.com/kondratyev.andriy</a></td></tr>
-  <tr><td><b>LinkedIn:</b></td>
-      <td><a href="https://www.linkedin.com/in/andriy-kondratyev/">linkedin.com/in/andriy-kondratyev</a></td></tr>
   <tr><td><b>Вихідний код:</b></td>
       <td><a href="https://github.com/keedhost/stepan">github.com/keedhost/stepan</a></td></tr>
 </table>
