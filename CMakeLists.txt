@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 
 # ── Version & build info ───────────────────────────────────────────────────────
 # User-visible version (may include pre-release suffix); used in metadata/UI
-set(APP_VERSION_FULL "0.1beta")
+set(APP_VERSION_FULL "0.2beta")
 
 find_package(Git QUIET)
 if(GIT_FOUND)
