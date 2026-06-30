@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(Stepan VERSION 0.1.0 LANGUAGES CXX)
+project(Stepan VERSION 0.3.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,7 +8,7 @@ set(CMAKE_AUTORCC ON)
 
 # ── Version & build info ───────────────────────────────────────────────────────
 # User-visible version (may include pre-release suffix); used in metadata/UI
-set(APP_VERSION_FULL "0.2beta")
+set(APP_VERSION_FULL "0.3.0")
 
 find_package(Git QUIET)
 if(GIT_FOUND)
