@@ -30,6 +30,10 @@
 #include <QTextDocument>
 #include <QImage>
 #include <QDialogButtonBox>
+#include <QFileDialog>
+#include <QDir>
+#include <QCursor>
+#include <QPixmap>
 #include <QSettings>
 #include <QCoreApplication>
 #include <QPainter>
@@ -301,7 +305,15 @@ void MainWindow::setupUi() {
     bulkMarkersBtn->setToolTip(appTr(
         "Відкрити масовий ввід координат та позначок на карті",
         "Open bulk coordinate markers on map"));
+    auto* snapshotBtn = new QPushButton(appTr("📷", "📷"), central);
+    snapshotBtn->setObjectName("externalBtn");
+    snapshotBtn->setToolTip(appTr(
+        "Скопіювати або зберегти карту як зображення",
+        "Copy or save map as image"));
+    connect(snapshotBtn, &QPushButton::clicked, this, &MainWindow::onMapSnapshot);
+
     mapHeader->addStretch();
+    mapHeader->addWidget(snapshotBtn);
     mapHeader->addWidget(bulkMarkersBtn);
     root->addLayout(mapHeader);
 
@@ -1332,4 +1344,27 @@ void MainWindow::onOpenBulkMarkers() {
     dlg->show();
     dlg->raise();
     dlg->activateWindow();
+}
+
+void MainWindow::onMapSnapshot() {
+    const QPixmap px = m_mapWidget->grabMap();
+    if (px.isNull()) return;
+
+    auto* menu = new QMenu(this);
+    QAction* copyAct = menu->addAction(appTr("Копіювати як зображення", "Copy as Image"));
+    QAction* saveAct = menu->addAction(appTr("Зберегти як зображення...", "Save as Image..."));
+    QAction* chosen = menu->exec(QCursor::pos());
+    delete menu;
+
+    if (chosen == copyAct) {
+        QApplication::clipboard()->setPixmap(px);
+    } else if (chosen == saveAct) {
+        const QString path = QFileDialog::getSaveFileName(
+            this,
+            appTr("Зберегти карту", "Save Map"),
+            QDir::homePath() + "/map.png",
+            "PNG (*.png);;JPEG (*.jpg *.jpeg)");
+        if (!path.isEmpty())
+            px.save(path);
+    }
 }

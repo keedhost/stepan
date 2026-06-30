@@ -42,6 +42,7 @@ private slots:
     void onWebServerStarted(quint16 port);
     void onWebServerStopped();
     void onOpenBulkMarkers();
+    void onMapSnapshot();
 
 private:
     // Input

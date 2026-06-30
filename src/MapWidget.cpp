@@ -6,6 +6,7 @@
 #include <QUrl>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QPixmap>
 
 MapWidget::MapWidget(QWidget* parent) : QWidget(parent) {
     auto* layout = new QVBoxLayout(this);
@@ -85,6 +86,10 @@ void MapWidget::setBulkMarkers(const QVector<BulkMarker>& markers) {
 
 void MapWidget::clearBulkMarkers() {
     runJs("clearBulkMarkers();");
+}
+
+QPixmap MapWidget::grabMap() const {
+    return m_view->grab();
 }
 
 QString MapWidget::exportBulkMarkersHtml(const QVector<BulkMarker>& markers, bool showTable) {

@@ -4,6 +4,7 @@
 #include <QString>
 
 QT_FORWARD_DECLARE_CLASS(QWebEngineView)
+QT_FORWARD_DECLARE_CLASS(QPixmap)
 
 struct BulkMarker {
     double  lat   = 0;
@@ -24,6 +25,8 @@ public:
 
     void setBulkMarkers(const QVector<BulkMarker>& markers);
     void clearBulkMarkers();
+
+    QPixmap grabMap() const;
 
     static QString exportBulkMarkersHtml(const QVector<BulkMarker>& markers, bool showTable = false);
 
