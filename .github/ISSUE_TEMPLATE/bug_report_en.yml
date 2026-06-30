@@ -1,0 +1,106 @@
+name: "Bug Report"
+description: Report a bug in the Stepan application
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please fill in the form below with as much detail as possible. A clear description of the issue significantly reduces the time needed to diagnose and resolve it.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: "e.g. When entering DMS coordinates the app freezes..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Open the application
+        2. Enter '...' into the field
+        3. Click '...'
+        4. See the error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behaviour
+      description: What should have happened instead?
+      placeholder: "The app should have displayed the coordinate in MGRS format..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behaviour
+      description: What happened instead? If there is an error message, paste it here.
+      placeholder: "The app froze / showed an empty field / produced a wrong result..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which operating system does the problem occur on?
+      options:
+        - Windows 10
+        - Windows 11
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux (Ubuntu/Debian)
+        - Linux (Fedora/RHEL)
+        - Linux (other distro)
+      multiple: false
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App Version
+      description: Find it in the menu under Help → About.
+      placeholder: "0.2beta"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: theme
+    attributes:
+      label: UI Theme
+      description: Which theme was active when the bug occurred?
+      options:
+        - System (auto)
+        - Dark
+        - Light
+        - Unknown / Not applicable
+      multiple: false
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or Logs
+      description: Attach screenshots or paste error text. You can drag images directly here.
+      placeholder: "Drag a screenshot here or paste error text..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other details that might help diagnose the issue.
+    validations:
+      required: false

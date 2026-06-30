@@ -1,0 +1,106 @@
+name: "Повідомлення про баг"
+description: Повідомити про баг у програмі Степан
+title: "[Баг] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Будь ласка, заповніть форму нижче якомога детальніше. Чіткий опис проблеми дозволяє значно скоротити час її усунення.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Опис помилки
+      description: Чітко та стисло опишіть, що сталося.
+      placeholder: "Наприклад: при введенні координат у форматі DMS програма зависає..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Кроки для відтворення
+      description: Покрокові дії, після яких виникає помилка.
+      placeholder: |
+        1. Відкрити програму
+        2. Ввести у поле '...'
+        3. Натиснути '...'
+        4. Побачити помилку
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Очікувана поведінка
+      description: Що мало відбутися замість цього?
+      placeholder: "Програма мала відобразити координати у форматі MGRS..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Фактична поведінка
+      description: Що сталося насправді? Якщо є повідомлення про помилку — вставте його сюди.
+      placeholder: "Програма зависла / показала порожнє поле / вивела неправильний результат..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Платформа
+      description: На якій операційній системі виникає проблема?
+      options:
+        - Windows 10
+        - Windows 11
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux (Ubuntu/Debian)
+        - Linux (Fedora/RHEL)
+        - Linux (інший дистрибутив)
+      multiple: false
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Версія програми
+      description: Знайдіть у меню «Довідка → Про програму».
+      placeholder: "0.2beta"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: theme
+    attributes:
+      label: Тема інтерфейсу
+      description: Яка тема була активна під час виникнення помилки?
+      options:
+        - Системна (авто)
+        - Темна
+        - Світла
+        - Не знаю / не стосується
+      multiple: false
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Скріншоти або логи
+      description: Вставте скріншоти або скопіюйте текст помилки. Зображення можна перетягнути прямо сюди.
+      placeholder: "Перетягніть скріншот або вставте текст помилки..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Додаткова інформація
+      description: Будь-які інші деталі, які можуть допомогти у вирішенні проблеми.
+    validations:
+      required: false

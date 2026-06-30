@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Документація / Documentation
+    url: https://keedhost.github.io/stepan/
+    about: Перегляньте документацію перед створенням Issue / Check the docs before filing an issue
