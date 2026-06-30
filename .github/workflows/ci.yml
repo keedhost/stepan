@@ -129,6 +129,7 @@ jobs:
         run: |
           $deployAbs = (Resolve-Path deploy).Path
           & "C:\Program Files (x86)\NSIS\makensis.exe" `
+            /INPUTCHARSET UTF8 `
             /DAPP_VERSION=$env:APP_VERSION `
             "/DDEPLOY_DIR=$deployAbs" `
             installer\stepan.nsi
