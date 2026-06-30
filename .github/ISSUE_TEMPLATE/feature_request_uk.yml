@@ -1,0 +1,76 @@
+name: "Запит функції"
+description: Запропонувати нову функцію або покращення програми Степан
+title: "[Запит] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Будь ласка, опишіть вашу пропозицію якомога детальніше. Чіткий опис допомагає правильно визначити пріоритет і реалізувати функцію.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Яку проблему вирішує ця функція?
+      description: Опишіть ситуацію або обмеження, з яким ви зіткнулися.
+      placeholder: "Наприклад: під час роботи з великою кількістю точок незручно вводити їх вручну, тому що..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Опис пропонованої функції
+      description: Чітко та конкретно опишіть, що саме ви хочете бачити в програмі.
+      placeholder: "Наприклад: можливість імпортувати точки з файлу CSV / підтримка формату X / кнопка для..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативи, які розглядалися
+      description: Чи розглядали ви інші способи вирішення цього завдання?
+      placeholder: "Наприклад: зараз вирішую це через... але це незручно тому що..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Категорія
+      description: До якої частини програми відноситься запит?
+      options:
+        - Конвертація координат
+        - Карта
+        - Масові позначки
+        - Інтерфейс
+        - Консольний режим
+        - Веб-інтерфейс
+        - Продуктивність
+        - Інше
+      multiple: false
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Платформа
+      description: На якій платформі актуальний цей запит?
+      options:
+        - Всі платформи
+        - Windows
+        - macOS
+        - Linux
+      multiple: false
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Додаткова інформація
+      description: Скріншоти, схеми, посилання на стандарти або будь-які інші матеріали, що можуть допомогти.
+    validations:
+      required: false

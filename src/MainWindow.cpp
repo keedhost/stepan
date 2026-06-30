@@ -154,6 +154,10 @@ void MainWindow::setupUi() {
     connect(bugAction, &QAction::triggered, this, []() {
         QDesktopServices::openUrl(QUrl("https://github.com/keedhost/stepan/issues/new/choose"));
     });
+    auto* featureAction = helpMenu->addAction(appTr("Запропонувати функцію...", "Request a Feature..."));
+    connect(featureAction, &QAction::triggered, this, []() {
+        QDesktopServices::openUrl(QUrl("https://github.com/keedhost/stepan/issues/new/choose"));
+    });
     helpMenu->addSeparator();
     auto* aboutAction = helpMenu->addAction(appTr("Про програму...", "About Stepan..."));
     connect(aboutAction, &QAction::triggered, this, &MainWindow::onShowAbout);

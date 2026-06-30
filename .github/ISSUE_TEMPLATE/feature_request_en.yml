@@ -1,0 +1,76 @@
+name: "Feature Request"
+description: Suggest a new feature or improvement for the Stepan application
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe your proposal in as much detail as possible. A clear description helps to correctly assess priority and implement the feature.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this feature solve?
+      description: Describe the situation or limitation you encountered.
+      placeholder: "e.g. When working with a large number of points it is inconvenient to enter them manually because..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Description of the proposed feature
+      description: Describe clearly and specifically what you would like to see in the application.
+      placeholder: "e.g. ability to import points from a CSV file / support for format X / a button for..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you considered other ways to solve this task?
+      placeholder: "e.g. I currently work around this by... but it is inconvenient because..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Which part of the application does this request relate to?
+      options:
+        - Coordinate conversion
+        - Map
+        - Bulk markers
+        - User interface
+        - Command-line mode
+        - Web interface
+        - Performance
+        - Other
+      multiple: false
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which platform is this request relevant for?
+      options:
+        - All platforms
+        - Windows
+        - macOS
+        - Linux
+      multiple: false
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional information
+      description: Screenshots, diagrams, links to standards, or any other materials that may help.
+    validations:
+      required: false
