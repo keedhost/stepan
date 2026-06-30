@@ -514,7 +514,7 @@ void MainWindow::onWebServerStopped() {
 void MainWindow::onShowConsoleHelp() {
     static const QString kHtmlUk = R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
   h2    { margin-bottom: 4px; }
   h3    { margin: 12px 0 4px; color: #2a5a9a; }
   pre   { background: #f4f4f4; border-radius: 4px; padding: 8px 12px;
@@ -631,7 +631,7 @@ $ stepan "48.020991, 37.810247"</pre>
 
     static const QString kHtmlEn = R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
   h2    { margin-bottom: 4px; }
   h3    { margin: 12px 0 4px; color: #2a5a9a; }
   pre   { background: #f4f4f4; border-radius: 4px; padding: 8px 12px;
@@ -771,7 +771,7 @@ $ stepan "48.020991, 37.810247"</pre>
 void MainWindow::onShowWebHelp() {
     static const QString kHtmlUk = R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
   h2    { margin-bottom: 4px; }
   h3    { margin: 12px 0 4px; color: #2a5a9a; }
   pre   { background: #f4f4f4; border-radius: 4px; padding: 8px 12px;
@@ -830,7 +830,7 @@ $ curl "http://localhost:8080/api/convert?q=invalid"
 
     static const QString kHtmlEn = R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
   h2    { margin-bottom: 4px; }
   h3    { margin: 12px 0 4px; color: #2a5a9a; }
   pre   { background: #f4f4f4; border-radius: 4px; padding: 8px 12px;
@@ -1005,7 +1005,7 @@ private:
 void MainWindow::onShowBulkMarkersHelp() {
     static const QString kHtmlUk = R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; line-height: 1.6; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; line-height: 1.6; color: #1a1a1a; background: #fff; }
   h2    { margin-bottom: 6px; }
   h3    { margin: 14px 0 4px; color: #2a5a9a; }
   p     { margin: 4px 0 8px; }
@@ -1073,7 +1073,7 @@ void MainWindow::onShowBulkMarkersHelp() {
 
     static const QString kHtmlEn = R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; line-height: 1.6; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; line-height: 1.6; color: #1a1a1a; background: #fff; }
   h2    { margin-bottom: 6px; }
   h3    { margin: 14px 0 4px; color: #2a5a9a; }
   p     { margin: 4px 0 8px; }
@@ -1164,7 +1164,7 @@ the saved file will include a table panel in the bottom-right corner listing all
 void MainWindow::onShowPrivacy() {
     static const QString kHtmlUk = R"prv(
 <style>
-  body { font-family: sans-serif; font-size: 13px; margin: 0; }
+  body { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
   h2   { margin-bottom: 6px; }
   h3   { margin: 14px 0 4px; color: #2a5a9a; }
   ul   { margin: 4px 0 4px 0; padding-left: 20px; }
@@ -1235,7 +1235,7 @@ void MainWindow::onShowPrivacy() {
 
     static const QString kHtmlEn = R"prv(
 <style>
-  body { font-family: sans-serif; font-size: 13px; margin: 0; }
+  body { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
   h2   { margin-bottom: 6px; }
   h3   { margin: 14px 0 4px; color: #2a5a9a; }
   ul   { margin: 4px 0 4px 0; padding-left: 20px; }

@@ -25,7 +25,7 @@ static QString aboutHtml() {
     const QString appHash = QString::fromLatin1(APP_BUILD_HASH);
 
     if (appLangIsEnglish()) return QString(R"(
-<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px;">
+<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; color: #1a1a1a; background: #fff;">
 
 <h3 style="margin-top:0; color:#1a1a1a;">Author</h3>
 <table style="border-spacing: 2px 7px;">
@@ -68,7 +68,7 @@ static QString aboutHtml() {
 
     // Ukrainian
     return QString(R"(
-<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px;">
+<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; color: #1a1a1a; background: #fff;">
 
 <h3 style="margin-top:0; color:#1a1a1a;">Автор</h3>
 <table style="border-spacing: 2px 7px;">
@@ -188,7 +188,7 @@ Foundation, версії 3 або (на ваш вибір) будь-якої п�
 
 static QString supportHtml() {
     if (appLangIsEnglish()) return R"(
-<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; line-height: 1.7;">
+<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; line-height: 1.7; color: #1a1a1a; background: #fff;">
 <p>If Stepan saves you time, you're welcome to say thanks&nbsp;☕</p>
 
 <h3 style="margin-top: 16px; color:#1a1a1a;">PayPal</h3>
@@ -209,7 +209,7 @@ static QString supportHtml() {
 </body></html>)";
 
     return R"(
-<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; line-height: 1.7;">
+<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; line-height: 1.7; color: #1a1a1a; background: #fff;">
 <p>Якщо Степан заощаджує вам час — завжди можна сказати дякую&nbsp;☕</p>
 
 <h3 style="margin-top: 16px; color:#1a1a1a;">PayPal</h3>
