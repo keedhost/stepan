@@ -150,6 +150,11 @@ void MainWindow::setupUi() {
     auto* privacyAction = helpMenu->addAction(appTr("Безпека даних...", "Data Privacy..."));
     connect(privacyAction, &QAction::triggered, this, &MainWindow::onShowPrivacy);
     helpMenu->addSeparator();
+    auto* bugAction = helpMenu->addAction(appTr("Повідомити про баг...", "Report a Bug..."));
+    connect(bugAction, &QAction::triggered, this, []() {
+        QDesktopServices::openUrl(QUrl("https://github.com/keedhost/stepan/issues/new/choose"));
+    });
+    helpMenu->addSeparator();
     auto* aboutAction = helpMenu->addAction(appTr("Про програму...", "About Stepan..."));
     connect(aboutAction, &QAction::triggered, this, &MainWindow::onShowAbout);
 
