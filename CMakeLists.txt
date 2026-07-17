@@ -151,6 +151,13 @@ if(UNIX AND NOT APPLE)
         )
     endforeach()
 
+    # Scalable source icon — freedesktop icon theme spec prefers this over
+    # any fixed-size PNG, so desktops render it crisp at every size.
+    install(FILES "${CMAKE_SOURCE_DIR}/icons/icon.svg"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
+        RENAME "stepan.svg"
+    )
+
     configure_file(
         "${CMAKE_SOURCE_DIR}/cmake/stepan.desktop.in"
         "${CMAKE_BINARY_DIR}/stepan.desktop"
@@ -196,6 +203,7 @@ if(UNIX AND NOT APPLE)
         "/usr/share/icons/hicolor/128x128" "/usr/share/icons/hicolor/128x128/apps"
         "/usr/share/icons/hicolor/256x256" "/usr/share/icons/hicolor/256x256/apps"
         "/usr/share/icons/hicolor/512x512" "/usr/share/icons/hicolor/512x512/apps"
+        "/usr/share/icons/hicolor/scalable" "/usr/share/icons/hicolor/scalable/apps"
     )
 
     include(CPack)
