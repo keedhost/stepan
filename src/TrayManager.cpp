@@ -120,8 +120,8 @@ void TrayManager::onCoordSubmitted() {
 }
 
 void TrayManager::reloadTrayIcon() {
-    const QString style = QSettings().value("trayIconStyle", "bw").toString();
-    const QString pfx = (style == "wb") ? ":/icons/wb/" : ":/icons/bw/";
+    const QString style = QSettings().value("trayIconStyle", "wb").toString();
+    const QString pfx = (style == "bw") ? ":/icons/bw/" : ":/icons/wb/";
     QIcon icon;
     icon.addFile(pfx + "16.png",  {16, 16});
     icon.addFile(pfx + "24.png",  {24, 24});

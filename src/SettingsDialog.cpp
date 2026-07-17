@@ -145,7 +145,7 @@ void SettingsDialog::load() {
     const int mapIdx = m_defaultMap->findData(map);
     if (mapIdx >= 0) m_defaultMap->setCurrentIndex(mapIdx);
 
-    const QString trayStyle = s.value("trayIconStyle", "bw").toString();
+    const QString trayStyle = s.value("trayIconStyle", "wb").toString();
     const int trayIdx = m_trayIconStyle->findData(trayStyle);
     if (trayIdx >= 0) m_trayIconStyle->setCurrentIndex(trayIdx);
 
