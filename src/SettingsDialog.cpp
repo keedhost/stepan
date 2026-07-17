@@ -40,8 +40,8 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     auto* behavBox    = new QGroupBox(appTr("Поведінка", "Behavior"), this);
     auto* behavLayout = new QVBoxLayout(behavBox);
 
-    m_closeToTray = new QCheckBox(appTr("При закритті вікна — приховувати у трей (не виходити)", "On close — hide to tray (don't quit)"), behavBox);
-    behavLayout->addWidget(m_closeToTray);
+    m_disableCloseToTray = new QCheckBox(appTr("Не згортати в трей при закритті", "Don't minimize to tray on close"), behavBox);
+    behavLayout->addWidget(m_disableCloseToTray);
 
     root->addWidget(behavBox);
 
@@ -139,7 +139,7 @@ void SettingsDialog::load() {
     QSettings s;
     m_autoStart->setChecked(AutoStart::isEnabled());
     m_startMinimized->setChecked(s.value("startMinimized", false).toBool());
-    m_closeToTray->setChecked(s.value("closeToTray", true).toBool());
+    m_disableCloseToTray->setChecked(!s.value("closeToTray", true).toBool());
 
     const QString map = s.value("defaultMap", "streets").toString();
     const int mapIdx = m_defaultMap->findData(map);
@@ -169,7 +169,7 @@ void SettingsDialog::save() {
     if (AutoStart::isSupported())
         AutoStart::setEnabled(m_autoStart->isChecked());
     s.setValue("startMinimized", m_startMinimized->isChecked());
-    s.setValue("closeToTray",    m_closeToTray->isChecked());
+    s.setValue("closeToTray",    !m_disableCloseToTray->isChecked());
     s.setValue("defaultMap",      m_defaultMap->currentData().toString());
     s.setValue("trayIconStyle",   m_trayIconStyle->currentData().toString());
     s.setValue("webEnabled",      m_webEnabled->isChecked());

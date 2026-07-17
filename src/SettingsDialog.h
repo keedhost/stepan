@@ -20,7 +20,7 @@ private:
     QCheckBox* m_autoStart      = nullptr;
     QCheckBox* m_startMinimized = nullptr;
     // Поведінка
-    QCheckBox* m_closeToTray    = nullptr;
+    QCheckBox* m_disableCloseToTray = nullptr;
     // Карта
     QComboBox* m_defaultMap     = nullptr;
     // Трей
