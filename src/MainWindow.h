@@ -33,6 +33,7 @@ private slots:
     void onOpenGoogleMaps();
     void onOpenOSM();
     void onMapSourceChanged(const QString& key);
+    void onCheckForUpdates();
     void onShowSettings();
     void onShowConsoleHelp();
     void onShowWebHelp();

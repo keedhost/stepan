@@ -38,7 +38,15 @@
 #include <QCoreApplication>
 #include <QPainter>
 #include <QTextCursor>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QVersionNumber>
+#include <QMessageBox>
 #include "BulkMarkersDialog.h"
+#include "version.h"
 
 static QString buildStylesheet(bool dark) {
     const char* bd  = dark ? "#5a5a5a" : "#c8c8c8"; // border
@@ -136,6 +144,10 @@ MainWindow::MainWindow(QWidget* parent)
 
 void MainWindow::setupUi() {
     // Menu bar
+    auto* fileMenu = menuBar()->addMenu(appTr("Файл", "File"));
+    auto* checkUpdatesAction = fileMenu->addAction(appTr("Перевірити оновлення...", "Check for Updates..."));
+    connect(checkUpdatesAction, &QAction::triggered, this, &MainWindow::onCheckForUpdates);
+
     auto* settingsMenu = menuBar()->addMenu(appTr("Налаштування", "Settings"));
     auto* settingsAction = settingsMenu->addAction(appTr("Налаштування...", "Settings..."));
     connect(settingsAction, &QAction::triggered, this, &MainWindow::onShowSettings);
@@ -1337,6 +1349,57 @@ it is a core architectural requirement:<br><br>
 void MainWindow::onShowAbout() {
     AboutDialog dlg(this);
     dlg.exec();
+}
+
+void MainWindow::onCheckForUpdates() {
+    auto* nam = new QNetworkAccessManager(this);
+
+    QNetworkRequest req(QUrl("https://api.github.com/repos/keedhost/stepan/releases/latest"));
+    req.setRawHeader("User-Agent", "Stepan-App");
+    req.setRawHeader("Accept", "application/vnd.github+json");
+
+    setCursor(Qt::WaitCursor);
+    QNetworkReply* reply = nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        reply->deleteLater();
+        nam->deleteLater();
+        unsetCursor();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            QMessageBox::warning(this,
+                appTr("Перевірка оновлень", "Check for Updates"),
+                appTr("Не вдалося перевірити оновлення: ", "Could not check for updates: ")
+                    + reply->errorString());
+            return;
+        }
+
+        const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+        QString tag = obj.value("tag_name").toString();
+        const QString htmlUrl = obj.value("html_url").toString();
+        if (tag.startsWith('v', Qt::CaseInsensitive))
+            tag.remove(0, 1);
+
+        const QVersionNumber latest  = QVersionNumber::fromString(tag);
+        const QVersionNumber current = QVersionNumber::fromString(
+            QString::fromLatin1(APP_VERSION_FULL));
+
+        if (tag.isEmpty() || latest.isNull() || latest <= current) {
+            QMessageBox::information(this,
+                appTr("Перевірка оновлень", "Check for Updates"),
+                appTr("Ви використовуєте найсвіжішу версію.", "You are using the latest version."));
+            return;
+        }
+
+        const auto choice = QMessageBox::question(this,
+            appTr("Доступне оновлення", "Update Available"),
+            appTr("Доступна нова версія %1 (поточна — %2).\nВідкрити сторінку завантаження?",
+                  "A new version %1 is available (current — %2).\nOpen the download page?")
+                .arg(latest.toString(), current.toString()),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+
+        if (choice == QMessageBox::Yes && !htmlUrl.isEmpty())
+            QDesktopServices::openUrl(QUrl(htmlUrl));
+    });
 }
 
 void MainWindow::onOpenBulkMarkers() {
