@@ -12,6 +12,7 @@
 #include <QApplication>
 #include <QTimer>
 #include <QSettings>
+#include <QCursor>
 
 TrayManager::TrayManager(QObject* parent) : QObject(parent) {
     m_tray = new QSystemTrayIcon(this);
@@ -62,7 +63,15 @@ TrayManager::TrayManager(QObject* parent) : QObject(parent) {
     connect(quitAction, &QAction::triggered, this, &TrayManager::quitRequested);
     m_menu->addAction(quitAction);
 
+#ifndef Q_OS_MAC
+    // On Windows/Linux the native context menu path is safe; let Qt handle it.
     m_tray->setContextMenu(m_menu);
+#endif
+    // On macOS the menu is shown manually via popup() in onTrayActivated().
+    // Attaching it as the native context menu triggers a crash in some Qt/AppKit
+    // versions: NSStatusItem's own tracking session calls -[NSEvent clickCount]
+    // on a non-mouse event, and AppKit throws an uncaught NSException, aborting
+    // the process. Showing the QMenu ourselves avoids that native tracking path.
 
     // Focus the input field when the menu opens
     connect(m_menu, &QMenu::aboutToShow, this, [this]() {
@@ -87,10 +96,15 @@ void TrayManager::onTrayActivated(QSystemTrayIcon::ActivationReason reason) {
         emit showWindowRequested();
     }
 #else
-    // On macOS both Trigger and Context activate the menu bar icon;
-    // single left-click delegates to showWindowRequested.
+    // On macOS: left click shows/hides the main window; any other
+    // activation (right click, etc.) shows the menu, popped up manually
+    // to avoid the native NSStatusItem tracking-session crash (see the
+    // comment above setContextMenu()).
     if (reason == QSystemTrayIcon::Trigger) {
         emit showWindowRequested();
+    } else {
+        const QRect geo = m_tray->geometry();
+        m_menu->popup(geo.isValid() ? geo.bottomLeft() : QCursor::pos());
     }
 #endif
     Q_UNUSED(reason)
