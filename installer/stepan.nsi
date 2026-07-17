@@ -39,6 +39,7 @@ ShowInstDetails  show
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE      "..\LICENSE"
 !insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
@@ -105,15 +106,27 @@ Section "Основні файли" SecMain
     WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoModify"             1
     WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoRepair"             1
 
-    ; Start menu shortcuts
+    WriteUninstaller "$INSTDIR\Uninstall.exe"
+SectionEnd
+
+Section "Ярлик у меню «Пуск»" SecStartMenu
     CreateDirectory "$SMPROGRAMS\${APP_NAME}"
     CreateShortcut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" \
         "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
     CreateShortcut "$SMPROGRAMS\${APP_NAME}\Видалити ${APP_NAME}.lnk" \
         "$INSTDIR\Uninstall.exe"
-
-    WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
+
+Section "Ярлик на робочому столі" SecDesktop
+    CreateShortcut "$DESKTOP\${APP_NAME}.lnk" \
+        "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
+SectionEnd
+
+!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecMain}       "Файли програми (обов'язково)."
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecStartMenu}  "Створити ярлики у меню «Пуск»."
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecDesktop}    "Створити ярлик на робочому столі."
+!insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ; ── Uninstaller ───────────────────────────────────────────────────────────────
 Section "Uninstall"
@@ -122,6 +135,7 @@ Section "Uninstall"
     Delete "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk"
     Delete "$SMPROGRAMS\${APP_NAME}\Видалити ${APP_NAME}.lnk"
     RMDir  "$SMPROGRAMS\${APP_NAME}"
+    Delete "$DESKTOP\${APP_NAME}.lnk"
 
     DeleteRegKey HKLM "${REG_KEY}"
     DeleteRegKey HKLM "${UNINSTALL_KEY}"
