@@ -103,8 +103,11 @@ void TrayManager::onTrayActivated(QSystemTrayIcon::ActivationReason reason) {
     if (reason == QSystemTrayIcon::Trigger) {
         emit showWindowRequested();
     } else {
-        const QRect geo = m_tray->geometry();
-        m_menu->popup(geo.isValid() ? geo.bottomLeft() : QCursor::pos());
+        // QSystemTrayIcon::geometry() is unreliable on macOS (Qt/Cocoa often
+        // reports a stale or wrong rect while still passing isValid()), so
+        // anchor the popup to the cursor position instead — the click always
+        // happens right on the icon.
+        m_menu->popup(QCursor::pos());
     }
 #endif
     Q_UNUSED(reason)
