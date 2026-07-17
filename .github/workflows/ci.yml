@@ -166,12 +166,19 @@ jobs:
       - name: Build
         run: cmake --build build --parallel $(sysctl -n hw.logicalcpu)
 
-      - name: Create DMG with macdeployqt
+      - name: Install dmgbuild (styled DMG background/layout)
+        run: |
+          brew install pipx
+          pipx install dmgbuild
+
+      - name: Bundle Qt frameworks
+        run: macdeployqt build/Stepan.app
+
+      - name: Create styled DMG
         run: |
           VERSION=$(grep -m1 'set(APP_VERSION_FULL' CMakeLists.txt | sed 's/.*"\(.*\)".*/\1/')
           ARCH=$(uname -m)
-          macdeployqt build/Stepan.app -dmg
-          mv build/Stepan.dmg "Stepan-${VERSION}-macos-${ARCH}.dmg"
+          ./scripts/make-dmg.sh build/Stepan.app "Stepan-${VERSION}-macos-${ARCH}.dmg" Stepan
 
       - uses: actions/upload-artifact@v4
         with:

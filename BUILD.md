@@ -31,6 +31,15 @@ brew install cmake ninja qt
 - Qt 6.x → macOS
 - Qt WebEngine
 
+**Для стилізованого DMG** (фон, стрілочка «перетягніть у Applications», іконка тому) —
+`./scripts/build-macos.sh` викликає `scripts/make-dmg.sh`, який використовує
+[dmgbuild](https://github.com/dmgbuild/dmgbuild):
+```bash
+brew install pipx
+pipx install dmgbuild
+```
+Без цього DMG-крок завершиться помилкою з підказкою встановити `dmgbuild`; сам `.app` bundle все одно збереться.
+
 ### 2. Збірка
 
 ```bash
@@ -54,11 +63,9 @@ cmake --build build --parallel
 build/Stepan.app          ← готовий .app bundle
 ```
 
-**Для розповсюдження** (вбудовує Qt-бібліотеки, створює DMG):
-```bash
-$(brew --prefix qt)/bin/macdeployqt build/Stepan.app -dmg
-# → build/Stepan.dmg
-```
+**Для розповсюдження**: `./scripts/build-macos.sh` вже сам вбудовує Qt-бібліотеки
+(`macdeployqt` + фікс rpath) і пакує стилізований `build-macos/Stepan.dmg`
+(фон, іконка, стрілочка «перетягніть у Applications» — див. вище).
 
 ---
 

@@ -197,12 +197,11 @@ if [ -d "$APP_BUNDLE" ]; then
         echo "==> Re-signing bundle..."
         codesign --force --deep --sign - "$APP_BUNDLE"
 
-        # ── Package as DMG ─────────────────────────────────────────────────────
-        # Use hdiutil directly — macdeployqt -dmg re-runs deployment and reverts
-        # the @loader_path fixes we applied above.
+        # ── Package as styled DMG ───────────────────────────────────────────────
+        # Uses our own script rather than `macdeployqt -dmg`, which re-runs
+        # deployment and reverts the @loader_path fixes applied above.
         echo "==> Creating DMG..."
-        hdiutil create -volname "Stepan" -srcfolder "$APP_BUNDLE" \
-            -ov -format UDZO "$BUILD_DIR/Stepan.dmg"
+        "$ROOT_DIR/scripts/make-dmg.sh" "$APP_BUNDLE" "$BUILD_DIR/Stepan.dmg" "Stepan"
 
         echo ""
         echo "✓ Build & deploy complete."

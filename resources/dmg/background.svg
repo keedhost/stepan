@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg width="660" height="500" viewBox="0 0 660 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFBF0"/>
+      <stop offset="1" stop-color="#FFE7AE"/>
+    </linearGradient>
+    <linearGradient id="arrowGrad" x1="0" y1="0" x2="1" y2="0.15">
+      <stop offset="0" stop-color="#F5C177"/>
+      <stop offset="0.55" stop-color="#EE8B58"/>
+      <stop offset="1" stop-color="#D9503F"/>
+    </linearGradient>
+    <filter id="dropshadow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3.2" result="blur"/>
+      <feOffset in="blur" dx="0" dy="4" result="offsetBlur"/>
+      <feComponentTransfer in="offsetBlur" result="shadow">
+        <feFuncA type="linear" slope="0.30"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="660" height="500" fill="url(#bg)"/>
+
+  <!-- decorative faint watermark: folded map silhouette, bleeding off the bottom-right edge -->
+  <g transform="translate(500,330) rotate(-8) scale(0.42)" opacity="0.20">
+    <path d="M640 213.333333L384 128 128 213.333333v682.666667l256-85.333333 256 85.333333 256-85.333333V128z" fill="#D99A3E"/>
+    <path d="M640 320c-82.496 0-149.333333 70.250667-149.333333 156.821333S640 768 640 768s149.333333-204.629333 149.333333-291.178667S722.496 320 640 320z" fill="#D99A3E"/>
+  </g>
+
+  <!-- artistic curved ribbon arrow, tapered rounded tail -> wide head -->
+  <g filter="url(#dropshadow)">
+    <path fill="url(#arrowGrad)" d="
+      M 258,244
+      C 300,246 300,216 340,206
+      C 352,203 362,202 372,202
+      L 372,190
+      L 424,220
+      L 372,250
+      L 372,236
+      C 356,237 336,240 322,248
+      C 300,260 286,258 258,256
+      A 6,6 0 0 1 258,244
+      Z"/>
+  </g>
+
+  <!-- caption -->
+  <text x="330" y="410" text-anchor="middle"
+        font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="19" font-weight="600"
+        fill="#6b5636">Перетягніть Степан у Applications, щоб встановити</text>
+  <text x="330" y="434" text-anchor="middle"
+        font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13"
+        fill="#9a8560">Drag Stepan to Applications to install</text>
+</svg>
