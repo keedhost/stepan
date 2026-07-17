@@ -96,21 +96,18 @@ void TrayManager::onTrayActivated(QSystemTrayIcon::ActivationReason reason) {
         emit showWindowRequested();
     }
 #else
-    // On macOS: left click shows/hides the main window; any other
-    // activation (right click, etc.) shows the menu, popped up manually
-    // to avoid the native NSStatusItem tracking-session crash (see the
-    // comment above setContextMenu()).
-    if (reason == QSystemTrayIcon::Trigger) {
-        emit showWindowRequested();
-    } else {
-        // QSystemTrayIcon::geometry() is unreliable on macOS (Qt/Cocoa often
-        // reports a stale or wrong rect while still passing isValid()), so
-        // anchor the popup to the cursor position instead — the click always
-        // happens right on the icon.
-        m_menu->popup(QCursor::pos());
-    }
-#endif
+    // On macOS: any click on the icon just shows the menu (popped up
+    // manually to avoid the native NSStatusItem tracking-session crash —
+    // see the comment above setContextMenu()). The main window only opens
+    // via the "Показати вікно" menu action or by submitting a coordinate,
+    // never directly from clicking the tray icon.
     Q_UNUSED(reason)
+    // QSystemTrayIcon::geometry() is unreliable on macOS (Qt/Cocoa often
+    // reports a stale or wrong rect while still passing isValid()), so
+    // anchor the popup to the cursor position instead — the click always
+    // happens right on the icon.
+    m_menu->popup(QCursor::pos());
+#endif
 }
 
 void TrayManager::onCoordSubmitted() {
