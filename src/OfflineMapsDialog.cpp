@@ -1,6 +1,7 @@
 #include "OfflineMapsDialog.h"
 #include "AppLocale.h"
 #include "RegionPresets.h"
+#include "Theme.h"
 #include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QSpinBox>
@@ -68,7 +69,7 @@ OfflineMapsDialog::OfflineMapsDialog(const QString& basePath, const QString& ini
         "\"Orthoimage (Esri)\" or \"Topographic\" work more reliably for an offline cache."),
         m_configWidget);
     m_osmWarningLbl->setWordWrap(true);
-    m_osmWarningLbl->setStyleSheet("color: #b03030; font-size: 11px;");
+    m_osmWarningLbl->setStyleSheet(QString("color: %1; font-size: 11px;").arg(Theme::colors().danger));
     form->addRow(m_osmWarningLbl);
 
     m_advancedModeCheck = new QCheckBox(appTr("Розширений режим", "Advanced mode"), m_configWidget);
@@ -288,13 +289,14 @@ void OfflineMapsDialog::updateEstimate() {
     m_osmWarningLbl->setVisible(m_typeCombo->currentData().toString() == "streets");
 
     const qint64 count = TileDownloader::estimateTileCount(currentRegion());
+    const Theme::Colors tc = Theme::colors();
     if (count > kWarnTileCount) {
-        m_estimateLbl->setStyleSheet("color: #b03030;");
+        m_estimateLbl->setStyleSheet(QString("color: %1;").arg(tc.danger));
         m_estimateLbl->setText(appTr(
             "%1 тайлів — забагато. Зменшіть регіон або діапазон масштабу.",
             "%1 tiles — too many. Shrink the region or zoom range.").arg(count));
     } else {
-        m_estimateLbl->setStyleSheet("color: #444;");
+        m_estimateLbl->setStyleSheet(QString("color: %1;").arg(tc.textMuted));
         m_estimateLbl->setText(appTr("%1 тайлів", "%1 tiles").arg(count));
     }
     m_downloadBtn->setEnabled(count > 0 && count <= kMaxTileCount);

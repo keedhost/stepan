@@ -1,6 +1,7 @@
 #include "BulkMarkersDialog.h"
 #include "CoordinateParser.h"
 #include "AppLocale.h"
+#include "Theme.h"
 
 #include <QPlainTextEdit>
 #include <QLabel>
@@ -33,22 +34,24 @@ BulkMarkersDialog::BulkMarkersDialog(QWidget* parent)
     root->setSpacing(10);
     root->setContentsMargins(14, 12, 14, 12);
 
+    const Theme::Colors tc = Theme::colors();
+
     // ── Help ─────────────────────────────────────────────────────────────────
     auto* helpBox = new QFrame(this);
     helpBox->setFrameShape(QFrame::StyledPanel);
-    helpBox->setStyleSheet(
-        "QFrame { background:#f0f6ff; border:1px solid #c8daf5; border-radius:4px; }"
-        "QLabel { background:transparent; border:none; }");
+    helpBox->setStyleSheet(QString(
+        "QFrame { background:%1; border:1px solid %2; border-radius:4px; }"
+        "QLabel { background:transparent; border:none; }").arg(tc.hoverBg, tc.border));
     auto* helpLayout = new QVBoxLayout(helpBox);
     helpLayout->setContentsMargins(10, 8, 10, 8);
     helpLayout->setSpacing(4);
 
     auto* helpTitle = new QLabel("<b>Формат рядка:</b> &lt;координати&gt; [роздільник] [підпис]", helpBox);
     helpTitle->setWordWrap(true);
-    helpTitle->setStyleSheet("font-size:12px; color:#1a3a6a;");
+    helpTitle->setStyleSheet(QString("font-size:12px; color:%1;").arg(tc.link));
 
     auto* helpText = new QLabel(
-        "<span style='font-family:monospace; font-size:11px; color:#333;'>"
+        QString("<span style='font-family:monospace; font-size:11px; color:%1;'>"
         "37U CP 94712 95805 - Точка А<br>"
         "37UCP9471295805 Точка А<br>"
         "37U CP 94712 95805: точка А<br>"
@@ -58,8 +61,9 @@ BulkMarkersDialog::BulkMarkersDialog(QWidget* parent)
         "37N 411286 5319318 КП<br>"
         "53-21447 74-11251 Ціль"
         "</span>"
-        "<span style='font-size:11px; color:#666;'><br>"
-        "Роздільники: «&nbsp;-&nbsp;» або «:&nbsp;» або пробіл. Підпис — необов'язковий.</span>",
+        "<span style='font-size:11px; color:%2;'><br>"
+        "Роздільники: «&nbsp;-&nbsp;» або «:&nbsp;» або пробіл. Підпис — необов'язковий.</span>")
+            .arg(tc.text, tc.textMuted),
         helpBox);
     helpText->setWordWrap(true);
 
@@ -71,15 +75,7 @@ BulkMarkersDialog::BulkMarkersDialog(QWidget* parent)
     auto* toggleRow = new QHBoxLayout();
     toggleRow->setSpacing(0);
 
-    const QString btnBase =
-        "QPushButton{"
-          "padding:5px 18px;font-size:12px;"
-          "border:1px solid #b0b8c4;background:#f5f5f5;color:#333;"
-        "}"
-        "QPushButton:checked{"
-          "background:#3d7cf5;color:#fff;border-color:#3d7cf5;"
-        "}"
-        "QPushButton:hover:!checked{background:#e8eef8;}";
+    const QString btnBase = Theme::segmentedButtonQss("QPushButton");
 
     auto* coordsFirstBtn = new QPushButton("Спочатку координати", this);
     auto* labelFirstBtn  = new QPushButton("Спочатку опис",        this);
@@ -133,13 +129,13 @@ BulkMarkersDialog::BulkMarkersDialog(QWidget* parent)
 
     // ── Status ───────────────────────────────────────────────────────────────
     m_status = new QLabel("Введіть координати вище", this);
-    m_status->setStyleSheet("font-size:12px; color:#666; padding:2px 0;");
+    m_status->setStyleSheet(QString("font-size:12px; color:%1; padding:2px 0;").arg(tc.textMuted));
     root->addWidget(m_status);
 
     // ── Table option
     m_tableCheckBox = new QCheckBox(
         "Показати таблицю MGRS-координат у завантаженому HTML-файлі", this);
-    m_tableCheckBox->setStyleSheet("font-size:12px; color:#333; padding:2px 0;");
+    m_tableCheckBox->setStyleSheet(QString("font-size:12px; color:%1; padding:2px 0;").arg(tc.text));
     root->addWidget(m_tableCheckBox);
 
     // ── Separator ────────────────────────────────────────────────────────────
@@ -153,32 +149,22 @@ BulkMarkersDialog::BulkMarkersDialog(QWidget* parent)
     btnRow->setSpacing(8);
 
     m_showBtn = new QPushButton("Показати на карті", this);
-    m_showBtn->setStyleSheet(
-        "QPushButton { padding:7px 16px; border:1px solid #3d7cf5; border-radius:5px;"
-        "  background:#3d7cf5; color:#fff; font-size:13px; font-weight:bold; }"
-        "QPushButton:hover { background:#2a5fd0; }"
-        "QPushButton:disabled { background:#aaa; border-color:#aaa; }");
+    m_showBtn->setStyleSheet(Theme::primaryButtonQss("QPushButton"));
     m_showBtn->setEnabled(false);
 
     m_downloadBtn = new QPushButton("Завантажити HTML", this);
-    m_downloadBtn->setStyleSheet(
-        "QPushButton { padding:7px 16px; border:1px solid #2a7a2a; border-radius:5px;"
-        "  background:#fff; color:#2a7a2a; font-size:13px; }"
-        "QPushButton:hover { background:#e8f4e8; }"
-        "QPushButton:disabled { color:#aaa; border-color:#aaa; }");
+    m_downloadBtn->setStyleSheet(Theme::outlineButtonQss("QPushButton", tc.success, tc.hoverBg));
     m_downloadBtn->setEnabled(false);
 
     auto* clearMapBtn = new QPushButton("Очистити карту", this);
-    clearMapBtn->setStyleSheet(
-        "QPushButton { padding:7px 16px; border:1px solid #bbb; border-radius:5px;"
-        "  background:#fff; color:#555; font-size:13px; }"
-        "QPushButton:hover { background:#fff0f0; border-color:#c44; color:#c44; }");
+    clearMapBtn->setStyleSheet(QString(
+        "QPushButton { padding:7px 16px; border:1px solid %1; border-radius:5px;"
+        "  background:%2; color:%3; font-size:13px; }"
+        "QPushButton:hover { background:%2; border-color:%4; color:%4; }")
+        .arg(tc.border, tc.bg, tc.text, tc.danger));
 
     auto* closeBtn = new QPushButton("Закрити", this);
-    closeBtn->setStyleSheet(
-        "QPushButton { padding:7px 16px; border:1px solid #bbb; border-radius:5px;"
-        "  background:#f5f5f5; color:#333; font-size:13px; }"
-        "QPushButton:hover { background:#e8e8e8; }");
+    closeBtn->setStyleSheet(Theme::neutralButtonQss("QPushButton"));
 
     btnRow->addWidget(m_showBtn);
     btnRow->addWidget(m_downloadBtn);
@@ -261,6 +247,9 @@ BulkMarkersDialog::ParsedLine BulkMarkersDialog::parseLineWithLabel(const QStrin
 // ── Re-parse and re-highlight on every text change ───────────────────────────
 
 void BulkMarkersDialog::rehighlight() {
+    const Theme::Colors tc = Theme::colors();
+    const QColor errorLineBg(tc.dangerBg);
+
     m_parsed.clear();
 
     QList<QTextEdit::ExtraSelection> errorSels;
@@ -277,7 +266,7 @@ void BulkMarkersDialog::rehighlight() {
                 ++validCount;
             } else {
                 QTextEdit::ExtraSelection sel;
-                sel.format.setBackground(QColor("#ffe0e0"));
+                sel.format.setBackground(errorLineBg);
                 sel.format.setProperty(QTextFormat::FullWidthSelection, true);
                 QTextCursor cursor(block);
                 cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
@@ -293,17 +282,17 @@ void BulkMarkersDialog::rehighlight() {
 
     if (validCount == 0 && errorCount == 0) {
         m_status->setText("Введіть координати вище");
-        m_status->setStyleSheet("font-size:12px; color:#666; padding:2px 0;");
+        m_status->setStyleSheet(QString("font-size:12px; color:%1; padding:2px 0;").arg(tc.textMuted));
     } else if (errorCount == 0) {
         m_status->setText(QString("✓  %1 позначок — всі коректні").arg(validCount));
-        m_status->setStyleSheet("font-size:12px; color:#2a7a2a; padding:2px 0;");
+        m_status->setStyleSheet(QString("font-size:12px; color:%1; padding:2px 0;").arg(tc.success));
     } else if (validCount == 0) {
         m_status->setText(QString("✗  %1 помилок — жодної коректної позначки").arg(errorCount));
-        m_status->setStyleSheet("font-size:12px; color:#c44; padding:2px 0;");
+        m_status->setStyleSheet(QString("font-size:12px; color:%1; padding:2px 0;").arg(tc.danger));
     } else {
         m_status->setText(QString("⚠  %1 позначок  ·  %2 помилок (червоним)")
             .arg(validCount).arg(errorCount));
-        m_status->setStyleSheet("font-size:12px; color:#a06000; padding:2px 0;");
+        m_status->setStyleSheet(QString("font-size:12px; color:%1; padding:2px 0;").arg(tc.warning));
     }
 
     const bool hasValid = !m_parsed.isEmpty();

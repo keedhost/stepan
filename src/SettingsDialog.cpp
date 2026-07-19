@@ -3,6 +3,7 @@
 #include "AutoStart.h"
 #include "WebServer.h"
 #include "OfflineMapsDialog.h"
+#include "Theme.h"
 #include <QCheckBox>
 #include <QComboBox>
 #include <QSpinBox>
@@ -84,7 +85,7 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     auto* restartNote = new QLabel(
         appTr("Для застосування мови перезапустіть програму.",
               "Restart the app to apply the language change."), langBox);
-    restartNote->setStyleSheet("color: #888; font-size: 11px;");
+    restartNote->setStyleSheet(QString("color: %1; font-size: 11px;").arg(Theme::colors().textMuted));
     langForm->addRow(restartNote);
 
     generalLayout->addWidget(langBox);
@@ -177,7 +178,7 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     m_webUrlLabel = new QLabel(webBox);
     m_webUrlLabel->setWordWrap(true);
     m_webUrlLabel->setOpenExternalLinks(true);
-    m_webUrlLabel->setStyleSheet("color: #2a5a9a; font-size: 12px; padding-top: 2px;");
+    m_webUrlLabel->setStyleSheet(QString("color: %1; font-size: 12px; padding-top: 2px;").arg(Theme::colors().link));
     webLayout->addWidget(m_webUrlLabel);
 
     webTabLayout->addWidget(webBox);

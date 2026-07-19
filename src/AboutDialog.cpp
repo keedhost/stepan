@@ -1,5 +1,6 @@
 #include "AboutDialog.h"
 #include "AppLocale.h"
+#include "Theme.h"
 #include "version.h"
 
 #include <QVBoxLayout>
@@ -25,10 +26,15 @@ static QString aboutHtml() {
     const QString appVer  = QString::fromLatin1(APP_VERSION_FULL);
     const QString appHash = QString::fromLatin1(APP_BUILD_HASH);
 
-    if (appLangIsEnglish()) return QString(R"(
-<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; color: #1a1a1a; background: #fff;">
+    const Theme::Colors tc = Theme::colors();
+    const QString bodyStyle  = QString("color:%1; background:%2;").arg(tc.text, tc.bg);
+    const QString h3Style    = QString("color:%1;").arg(tc.text);
+    const QString mutedStyle = QString("color:%1;").arg(tc.textMuted);
 
-<h3 style="margin-top:0; color:#1a1a1a;">Author</h3>
+    if (appLangIsEnglish()) return QString(R"(
+<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; %5">
+
+<h3 style="margin-top:0; %6">Author</h3>
 <table style="border-spacing: 2px 7px;">
   <tr><td width="110"><b>Name:</b></td>
       <td>Andrii Kondratiev</td></tr>
@@ -44,7 +50,7 @@ static QString aboutHtml() {
       <td><a href="https://github.com/keedhost/stepan">github.com/keedhost/stepan</a></td></tr>
 </table>
 
-<h3 style="color:#1a1a1a;">Technologies</h3>
+<h3 style="%6">Technologies</h3>
 <table style="border-spacing: 2px 5px;">
   <tr><td width="185"><b>Qt %1</b></td>
       <td>Cross-platform framework (GUI, network)</td></tr>
@@ -62,16 +68,16 @@ static QString aboutHtml() {
       <td>Build system</td></tr>
 </table>
 
-<p style="color:#888; font-size:12px; margin-top:14px;">
+<p style="%7 font-size:12px; margin-top:14px;">
   Version:&nbsp;<b>%3</b>&nbsp;&nbsp;Build:&nbsp;<b>%4</b>&nbsp;&nbsp;Date:&nbsp;<b>%2</b>
 </p>
-</body></html>)").arg(qtVer, build, appVer, appHash);
+</body></html>)").arg(qtVer, build, appVer, appHash, bodyStyle, h3Style, mutedStyle);
 
     // Ukrainian
     return QString(R"(
-<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; color: #1a1a1a; background: #fff;">
+<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; %5">
 
-<h3 style="margin-top:0; color:#1a1a1a;">Автор</h3>
+<h3 style="margin-top:0; %6">Автор</h3>
 <table style="border-spacing: 2px 7px;">
   <tr><td width="130"><b>Ім'я:</b></td>
       <td>Андрій Кондратьєв</td></tr>
@@ -87,7 +93,7 @@ static QString aboutHtml() {
       <td><a href="https://github.com/keedhost/stepan">github.com/keedhost/stepan</a></td></tr>
 </table>
 
-<h3 style="color:#1a1a1a;">Використані технології</h3>
+<h3 style="%6">Використані технології</h3>
 <table style="border-spacing: 2px 5px;">
   <tr><td width="185"><b>Qt %1</b></td>
       <td>Кросплатформний фреймворк (GUI, мережа)</td></tr>
@@ -105,10 +111,10 @@ static QString aboutHtml() {
       <td>Система збірки</td></tr>
 </table>
 
-<p style="color:#888; font-size:12px; margin-top:14px;">
+<p style="%7 font-size:12px; margin-top:14px;">
   Версія:&nbsp;<b>%3</b>&nbsp;&nbsp;Збірка:&nbsp;<b>%4</b>&nbsp;&nbsp;Дата:&nbsp;<b>%2</b>
 </p>
-</body></html>)").arg(qtVer, build, appVer, appHash);
+</body></html>)").arg(qtVer, build, appVer, appHash, bodyStyle, h3Style, mutedStyle);
 }
 
 static QString licenseHtml() {
@@ -188,47 +194,52 @@ Foundation, версії 3 або (на ваш вибір) будь-якої п�
 }
 
 static QString supportHtml() {
-    if (appLangIsEnglish()) return R"(
-<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; line-height: 1.7; color: #1a1a1a; background: #fff;">
+    const Theme::Colors tc = Theme::colors();
+    const QString bodyStyle  = QString("color:%1; background:%2;").arg(tc.text, tc.bg);
+    const QString h3Style    = QString("color:%1;").arg(tc.text);
+    const QString mutedStyle = QString("color:%1;").arg(tc.textMuted);
+
+    if (appLangIsEnglish()) return QString(R"(
+<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; line-height: 1.7; %1">
 <p>If Stepan saves you time, you're welcome to say thanks&nbsp;☕</p>
 
-<h3 style="margin-top: 16px; color:#1a1a1a;">PayPal</h3>
+<h3 style="margin-top: 16px; %2">PayPal</h3>
 <p>
   Open <a href="https://www.paypal.com">paypal.com</a>, choose
   <i>Send &amp; Request</i> and enter:<br>
   <b style="font-size:14px;">h0st@ukr.net</b>
 </p>
 
-<h3 style="margin-top: 16px; color:#1a1a1a;">Monobank</h3>
+<h3 style="margin-top: 16px; %2">Monobank</h3>
 <p>
   <a href="https://send.monobank.ua/AS4vebthC8">send.monobank.ua/AS4vebthC8</a>
 </p>
 
-<p style="color:#888; font-size:12px; margin-top:20px;">
+<p style="%3 font-size:12px; margin-top:20px;">
   Any amount is appreciated. Thank you!
 </p>
-</body></html>)";
+</body></html>)").arg(bodyStyle, h3Style, mutedStyle);
 
-    return R"(
-<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; line-height: 1.7; color: #1a1a1a; background: #fff;">
+    return QString(R"(
+<html><body style="font-family: sans-serif; font-size: 13px; margin: 6px 2px; line-height: 1.7; %1">
 <p>Якщо Степан заощаджує вам час — завжди можна сказати дякую&nbsp;☕</p>
 
-<h3 style="margin-top: 16px; color:#1a1a1a;">PayPal</h3>
+<h3 style="margin-top: 16px; %2">PayPal</h3>
 <p>
   Відкрийте <a href="https://www.paypal.com">paypal.com</a>, оберіть
   <i>Надіслати та запросити</i> і введіть:<br>
   <b style="font-size:14px;">h0st@ukr.net</b>
 </p>
 
-<h3 style="margin-top: 16px; color:#1a1a1a;">Monobank</h3>
+<h3 style="margin-top: 16px; %2">Monobank</h3>
 <p>
   <a href="https://send.monobank.ua/AS4vebthC8">send.monobank.ua/AS4vebthC8</a>
 </p>
 
-<p style="color:#888; font-size:12px; margin-top:20px;">
+<p style="%3 font-size:12px; margin-top:20px;">
   Будь-яка сума приємна. Дякую!
 </p>
-</body></html>)";
+</body></html>)").arg(bodyStyle, h3Style, mutedStyle);
 }
 
 // ── Dialog ────────────────────────────────────────────────────────────────────
@@ -262,16 +273,18 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
     f.setBold(true);
     nameLbl->setFont(f);
 
+    const Theme::Colors tc = Theme::colors();
+
     auto* verLbl = new QLabel(
         appTr("Версія", "Version") + " " +
         QString::fromLatin1(APP_VERSION_FULL) + " (" +
         QString::fromLatin1(APP_BUILD_HASH) + ")", this);
-    verLbl->setStyleSheet("color: #777; font-size: 12px;");
+    verLbl->setStyleSheet(QString("color: %1; font-size: 12px;").arg(tc.textMuted));
 
     auto* descLbl = new QLabel(
         appTr("Конвертер систем координат\nMGRS · DD · DMS · UTM · УСК-2000",
               "Coordinate System Converter\nMGRS · DD · DMS · UTM · USK-2000"), this);
-    descLbl->setStyleSheet("font-size: 13px; color: #333;");
+    descLbl->setStyleSheet(QString("font-size: 13px; color: %1;").arg(tc.text));
 
     titleCol->addWidget(nameLbl);
     titleCol->addWidget(verLbl);

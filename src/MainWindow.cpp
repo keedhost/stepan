@@ -6,6 +6,7 @@
 #include "WebServer.h"
 #include "OfflineMapsDialog.h"
 #include "AppLocale.h"
+#include "Theme.h"
 
 #include <QDir>
 #include <QDirIterator>
@@ -52,26 +53,23 @@
 #include "BulkMarkersDialog.h"
 #include "version.h"
 
-static QString buildStylesheet(bool dark) {
-    const char* bd  = dark ? "#5a5a5a" : "#c8c8c8"; // border
-    const char* bg  = dark ? "#2a2a2a" : "#ffffff";  // input bg
-    const char* fg  = dark ? "#e8e8e8" : "#1a1a1a";  // input text
-    const char* bb  = dark ? "#3c3c3c" : "#f0f0f0";  // button bg
-    const char* bt  = dark ? "#e8e8e8" : "#1a1a1a";  // button text
-    const char* hv  = dark ? "#505050" : "#e8f0fe";  // hover bg
-    const char* pr  = dark ? "#5a5a5a" : "#c6d5f9";  // pressed bg
-    const char* pb  = dark ? "#242424" : "#f8f8f8";  // panel bg
+// Shared single source of truth for the app's Qt-style-sheet theming: the
+// generic per-selector rules live in Theme.h (Theme::segmentedButtonQss and
+// friends) so dialogs can reuse the exact same building blocks instead of
+// duplicating hand-rolled QSS per widget.
+static QString buildStylesheet(bool /*dark*/) {
+    const Theme::Colors c = Theme::colors();
 
-    return QString(
+    QString qss = QString(
         "QLineEdit#coordInput{"
         " font-size:14px;padding:8px 12px;border:2px solid %1;"
         " border-radius:6px;background:%2;color:%3;font-family:monospace;}"
-        "QLineEdit#coordInput:focus{border-color:#3d7cf5;}"
+        "QLineEdit#coordInput:focus{border-color:%9;}"
         "QLabel#formatLabel{font-size:12px;padding:2px 4px;}"
         "QPushButton#externalBtn{"
         " padding:6px 14px;border:1px solid %1;border-radius:5px;"
         " background:%4;color:%5;font-size:12px;}"
-        "QPushButton#externalBtn:hover{background:%6;border-color:#3d7cf5;}"
+        "QPushButton#externalBtn:hover{background:%6;border-color:%9;}"
         "QPushButton#externalBtn:pressed{background:%7;}"
         "QPushButton#externalBtn:disabled{color:%1;}"
         "QFrame#coordsPanel{background:%8;border:1px solid %1;border-radius:6px;}"
@@ -80,35 +78,37 @@ static QString buildStylesheet(bool dark) {
         "QPushButton#copyBtn{"
         " padding:3px 10px;border:1px solid %1;border-radius:4px;"
         " background:%4;color:%5;font-size:11px;min-width:70px;}"
-        "QPushButton#copyBtn:hover{background:%6;border-color:#5a5;}"
+        "QPushButton#copyBtn:hover{background:%6;border-color:%10;}"
         "QPushButton#copyBtn:pressed{background:%7;}"
         "QPushButton#pasteBtn{"
         " padding:8px 14px;border:2px solid %1;border-radius:6px;"
         " background:%4;color:%5;font-size:14px;white-space:nowrap;}"
-        "QPushButton#pasteBtn:hover{background:%6;border-color:#3d7cf5;}"
+        "QPushButton#pasteBtn:hover{background:%6;border-color:%9;}"
         "QPushButton#pasteBtn:pressed{background:%7;}"
         "QLabel#mapSourceLabel{font-size:12px;}"
-        "QPushButton#mapBtnFirst,QPushButton#mapBtnMid,QPushButton#mapBtnLast{"
-        " padding:5px 11px;border:1px solid %1;border-radius:0;"
-        " background:%4;color:%5;font-size:12px;}"
         "QPushButton#mapBtnFirst{border-top-left-radius:5px;border-bottom-left-radius:5px;border-right:none;}"
         "QPushButton#mapBtnMid{border-right:none;}"
         "QPushButton#mapBtnLast{border-top-right-radius:5px;border-bottom-right-radius:5px;}"
-        "QPushButton#mapBtnFirst:checked,QPushButton#mapBtnMid:checked,QPushButton#mapBtnLast:checked{"
-        " background:#3d7cf5;color:#ffffff;border-color:#2a5fd0;}"
-        "QPushButton#mapBtnFirst:hover:!checked,"
-        "QPushButton#mapBtnMid:hover:!checked,"
-        "QPushButton#mapBtnLast:hover:!checked{background:%6;border-color:#8ab0f5;}"
-    ).arg(bd, bg, fg, bb, bt, hv, pr, pb);
+    ).arg(c.border, c.inputBg, c.text, c.buttonBg, c.text, c.hoverBg, c.pressedBg,
+          c.panelBg, c.accent, c.success);
+
+    qss += Theme::segmentedButtonQss(
+        "QPushButton#mapBtnFirst,QPushButton#mapBtnMid,QPushButton#mapBtnLast");
+    // Narrower padding than the shared default — three buttons share one row here.
+    qss += "QPushButton#mapBtnFirst,QPushButton#mapBtnMid,QPushButton#mapBtnLast{padding:5px 11px;}";
+
+    return qss;
 }
 
 void MainWindow::applyStylesheet() {
-    const bool dark = QApplication::palette().color(QPalette::Window).lightness() < 128;
+    const bool dark = Theme::isDark();
+    const Theme::Colors c = Theme::colors();
     setStyleSheet(buildStylesheet(dark));
     if (m_webBanner) {
-        m_webBanner->setStyleSheet(dark
-            ? "background:#1a3a1a;color:#7adc7a;padding:4px 10px;border:1px solid #2a6a2a;border-radius:4px;font-size:12px;"
-            : "background:#e8f4e8;color:#1a6a1a;padding:4px 10px;border:1px solid #9acd9a;border-radius:4px;font-size:12px;");
+        m_webBanner->setStyleSheet(QString(
+            "background:%1;color:%2;padding:4px 10px;border:1px solid %3;"
+            "border-radius:4px;font-size:12px;"
+        ).arg(c.successBg, c.success, c.successBorder));
     }
 }
 
@@ -392,9 +392,10 @@ void MainWindow::updateOutput(const std::optional<CoordinateData>& data) {
     const bool empty = m_input->text().trimmed().isEmpty();
 
     if (!data) {
+        const Theme::Colors tc = Theme::colors();
         m_formatLbl->setStyleSheet(empty
-            ? "color: #888; font-style: italic; font-size: 12px;"
-            : "color: #c44; font-size: 12px;");
+            ? QString("color: %1; font-style: italic; font-size: 12px;").arg(tc.textMuted)
+            : QString("color: %1; font-size: 12px;").arg(tc.danger));
         m_formatLbl->setText(empty
             ? "Введіть координати вище"
             : appTr("Формат не розпізнано", "Format not recognized"));
@@ -405,8 +406,8 @@ void MainWindow::updateOutput(const std::optional<CoordinateData>& data) {
         return;
     }
 
-    // Format label — green
-    m_formatLbl->setStyleSheet("color: #2a7a2a; font-weight: bold; font-size: 12px;");
+    // Format label — success color
+    m_formatLbl->setStyleSheet(QString("color: %1; font-weight: bold; font-size: 12px;").arg(Theme::colors().success));
     if (data->isZone()) {
         static const char* kSizes[] = {"100 км", "10 км", "1 км", "100 м", "10 м"};
         const char* sz = kSizes[data->mgrsPrecision]; // prec 0..4 is valid here
@@ -552,8 +553,9 @@ void MainWindow::onWebServerStarted(quint16 port) {
     const QString addr = s.value("webAddress", "0.0.0.0").toString();
     const QStringList urls = WebServer::listenUrls(addr, port);
     QStringList links;
+    const QString linkColor = Theme::colors().success;
     for (const QString& url : urls)
-        links << QString("<a href='%1' style='color:#1a6a1a;'>%1</a>").arg(url);
+        links << QString("<a href='%1' style='color:%2;'>%1</a>").arg(url, linkColor);
     m_webBanner->setText(appTr("Веб-сервер: ", "Web server: ") + links.join("&nbsp;&nbsp;·&nbsp;&nbsp;"));
     m_webBanner->setVisible(true);
 }
@@ -563,18 +565,23 @@ void MainWindow::onWebServerStopped() {
 }
 
 void MainWindow::onShowConsoleHelp() {
-    static const QString kHtmlUk = R"(
+    const Theme::Colors tc = Theme::colors();
+    const QString bodyStyle    = QString("color:%1; background:%2;").arg(tc.text, tc.bg);
+    const QString codeBg       = tc.panelBg;
+    const QString commentColor = tc.codeComment;
+
+    const QString kHtmlUk = QString(R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; __BODY_STYLE__ }
   h2    { margin-bottom: 4px; }
-  h3    { margin: 12px 0 4px; color: #2a5a9a; }
-  pre   { background: #f4f4f4; border-radius: 4px; padding: 8px 12px;
+  h3    { margin: 12px 0 4px; color: __H3_COLOR__; }
+  pre   { background: __CODE_BG__; border-radius: 4px; padding: 8px 12px;
           font-size: 12px; white-space: pre-wrap; line-height: 1.5; }
-  code  { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  code  { background: __CODE_BG__; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
   table { border-collapse: collapse; width: 100%; }
   td    { padding: 3px 8px; vertical-align: top; }
-  td:first-child { white-space: nowrap; font-family: monospace; font-size: 12px; color: #333; }
-  .comment { color: #6a9955; }
+  td:first-child { white-space: nowrap; font-family: monospace; font-size: 12px; color: __TEXT_COLOR__; }
+  .comment { color: __COMMENT_COLOR__; }
 </style>
 <h2>Консольні команди</h2>
 <p>Програму можна запускати з командного рядка без відкриття вікна.</p>
@@ -678,20 +685,25 @@ $ stepan "48.020991, 37.810247"</pre>
 <h3>Примітка</h3>
 <p>На macOS запускайте бінарний файл напряму:<br>
 <code>./Stepan.app/Contents/MacOS/Stepan --convert "..."</code></p>
-)";
+)")
+        .replace("__BODY_STYLE__", bodyStyle)
+        .replace("__H3_COLOR__", tc.link)
+        .replace("__CODE_BG__", codeBg)
+        .replace("__TEXT_COLOR__", tc.text)
+        .replace("__COMMENT_COLOR__", commentColor);
 
-    static const QString kHtmlEn = R"(
+    const QString kHtmlEn = QString(R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; __BODY_STYLE__ }
   h2    { margin-bottom: 4px; }
-  h3    { margin: 12px 0 4px; color: #2a5a9a; }
-  pre   { background: #f4f4f4; border-radius: 4px; padding: 8px 12px;
+  h3    { margin: 12px 0 4px; color: __H3_COLOR__; }
+  pre   { background: __CODE_BG__; border-radius: 4px; padding: 8px 12px;
           font-size: 12px; white-space: pre-wrap; line-height: 1.5; }
-  code  { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  code  { background: __CODE_BG__; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
   table { border-collapse: collapse; width: 100%; }
   td    { padding: 3px 8px; vertical-align: top; }
-  td:first-child { white-space: nowrap; font-family: monospace; font-size: 12px; color: #333; }
-  .comment { color: #6a9955; }
+  td:first-child { white-space: nowrap; font-family: monospace; font-size: 12px; color: __TEXT_COLOR__; }
+  .comment { color: __COMMENT_COLOR__; }
 </style>
 <h2>Command Line</h2>
 <p>The application can be launched from the command line without opening a window.</p>
@@ -795,7 +807,12 @@ $ stepan "48.020991, 37.810247"</pre>
 <h3>Note</h3>
 <p>On macOS, run the binary directly:<br>
 <code>./Stepan.app/Contents/MacOS/Stepan --convert "..."</code></p>
-)";
+)")
+        .replace("__BODY_STYLE__", bodyStyle)
+        .replace("__H3_COLOR__", tc.link)
+        .replace("__CODE_BG__", codeBg)
+        .replace("__TEXT_COLOR__", tc.text)
+        .replace("__COMMENT_COLOR__", commentColor);
 
     const QString& kHtml = appLangIsEnglish() ? kHtmlEn : kHtmlUk;
 
@@ -821,18 +838,23 @@ $ stepan "48.020991, 37.810247"</pre>
 }
 
 void MainWindow::onShowWebHelp() {
-    static const QString kHtmlUk = R"(
+    const Theme::Colors tc = Theme::colors();
+    const QString bodyStyle    = QString("color:%1; background:%2;").arg(tc.text, tc.bg);
+    const QString codeBg       = tc.panelBg;
+    const QString commentColor = tc.codeComment;
+
+    const QString kHtmlUk = QString(R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; __BODY_STYLE__ }
   h2    { margin-bottom: 4px; }
-  h3    { margin: 12px 0 4px; color: #2a5a9a; }
-  pre   { background: #f4f4f4; border-radius: 4px; padding: 8px 12px;
+  h3    { margin: 12px 0 4px; color: __H3_COLOR__; }
+  pre   { background: __CODE_BG__; border-radius: 4px; padding: 8px 12px;
           font-size: 12px; white-space: pre-wrap; line-height: 1.5; }
-  code  { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  code  { background: __CODE_BG__; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
   table { border-collapse: collapse; width: 100%; }
   td    { padding: 3px 8px; vertical-align: top; }
-  td:first-child { white-space: nowrap; font-family: monospace; font-size: 12px; color: #333; }
-  .comment { color: #6a9955; }
+  td:first-child { white-space: nowrap; font-family: monospace; font-size: 12px; color: __TEXT_COLOR__; }
+  .comment { color: __COMMENT_COLOR__; }
 </style>
 <h2>Веб-інтерфейс</h2>
 <p>Вбудований веб-сервер дозволяє конвертувати координати з будь-якого пристрою в мережі через браузер.</p>
@@ -878,20 +900,25 @@ $ curl "http://localhost:8080/api/convert?q=37U+DP+11286+19318"
 <span class="comment"># При помилці</span>
 $ curl "http://localhost:8080/api/convert?q=invalid"
 {"success":false,"error":"Формат не розпізнано"}</pre>
-)";
+)")
+        .replace("__BODY_STYLE__", bodyStyle)
+        .replace("__H3_COLOR__", tc.link)
+        .replace("__CODE_BG__", codeBg)
+        .replace("__TEXT_COLOR__", tc.text)
+        .replace("__COMMENT_COLOR__", commentColor);
 
-    static const QString kHtmlEn = R"(
+    const QString kHtmlEn = QString(R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; __BODY_STYLE__ }
   h2    { margin-bottom: 4px; }
-  h3    { margin: 12px 0 4px; color: #2a5a9a; }
-  pre   { background: #f4f4f4; border-radius: 4px; padding: 8px 12px;
+  h3    { margin: 12px 0 4px; color: __H3_COLOR__; }
+  pre   { background: __CODE_BG__; border-radius: 4px; padding: 8px 12px;
           font-size: 12px; white-space: pre-wrap; line-height: 1.5; }
-  code  { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  code  { background: __CODE_BG__; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
   table { border-collapse: collapse; width: 100%; }
   td    { padding: 3px 8px; vertical-align: top; }
-  td:first-child { white-space: nowrap; font-family: monospace; font-size: 12px; color: #333; }
-  .comment { color: #6a9955; }
+  td:first-child { white-space: nowrap; font-family: monospace; font-size: 12px; color: __TEXT_COLOR__; }
+  .comment { color: __COMMENT_COLOR__; }
 </style>
 <h2>Web Interface</h2>
 <p>The built-in web server allows converting coordinates from any device on the network through a browser.</p>
@@ -936,7 +963,12 @@ $ curl "http://localhost:8080/api/convert?q=37U+DP+11286+19318"
 <span class="comment"># On error</span>
 $ curl "http://localhost:8080/api/convert?q=invalid"
 {"success":false,"error":"Format not recognized"}</pre>
-)";
+)")
+        .replace("__BODY_STYLE__", bodyStyle)
+        .replace("__H3_COLOR__", tc.link)
+        .replace("__CODE_BG__", codeBg)
+        .replace("__TEXT_COLOR__", tc.text)
+        .replace("__COMMENT_COLOR__", commentColor);
 
     const QString& kHtml = appLangIsEnglish() ? kHtmlEn : kHtmlUk;
 
@@ -1056,20 +1088,24 @@ private:
 };
 
 void MainWindow::onShowBulkMarkersHelp() {
-    static const QString kHtmlUk = R"(
+    const Theme::Colors tc = Theme::colors();
+    const QString bodyStyle = QString("color:%1; background:%2;").arg(tc.text, tc.bg);
+    const QString codeBg    = tc.panelBg;
+
+    const QString kHtmlUk = QString(R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; line-height: 1.6; color: #1a1a1a; background: #fff; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; line-height: 1.6; __BODY_STYLE__ }
   h2    { margin-bottom: 6px; }
-  h3    { margin: 14px 0 4px; color: #2a5a9a; }
+  h3    { margin: 14px 0 4px; color: __H3_COLOR__; }
   p     { margin: 4px 0 8px; }
   ul    { margin: 4px 0 8px; padding-left: 20px; }
   li    { margin-bottom: 3px; }
-  code  { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
-  .img-wrap { margin: 12px 0; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+  code  { background: __CODE_BG__; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .img-wrap { margin: 12px 0; border: 1px solid __BORDER_COLOR__; border-radius: 4px; overflow: hidden; }
   .img-wrap img { max-width: 100%; display: block; }
   table { border-collapse: collapse; width: 100%; margin: 4px 0 8px; }
   td    { padding: 3px 8px; vertical-align: top; }
-  td:first-child { white-space: nowrap; font-weight: bold; font-size: 12px; color: #444; }
+  td:first-child { white-space: nowrap; font-weight: bold; font-size: 12px; color: __TEXT_COLOR__; }
 </style>
 <h2>Масові позначки на карті</h2>
 <p>Функція дозволяє завантажити список точок у будь-якому форматі координат,
@@ -1082,7 +1118,7 @@ void MainWindow::onShowBulkMarkersHelp() {
 
 <h3>Введення координат</h3>
 <p>Кожен рядок — одна точка. Рядки з помилками підсвічуються
-<span style="color:#c00; font-weight:bold">червоним кольором</span>.
+<span style="color:__DANGER_COLOR__; font-weight:bold">червоним кольором</span>.
 Кількість коректних та некоректних рядків відображається під полем введення.</p>
 
 <h3>Порядок: «Спочатку координати» / «Спочатку опис»</h3>
@@ -1122,22 +1158,28 @@ void MainWindow::onShowBulkMarkersHelp() {
   <li>Клік на рядок таблиці — карта центрується на точці, відкривається спливаюче вікно з координатами та MGRS.</li>
   <li>Клік на будь-яку позначку — відображається підпис, MGRS-координата та десяткові координати.</li>
 </ul>
-)";
+)")
+        .replace("__BODY_STYLE__", bodyStyle)
+        .replace("__H3_COLOR__", tc.link)
+        .replace("__CODE_BG__", codeBg)
+        .replace("__BORDER_COLOR__", tc.border)
+        .replace("__TEXT_COLOR__", tc.text)
+        .replace("__DANGER_COLOR__", tc.danger);
 
-    static const QString kHtmlEn = R"(
+    const QString kHtmlEn = QString(R"(
 <style>
-  body  { font-family: sans-serif; font-size: 13px; margin: 0; line-height: 1.6; color: #1a1a1a; background: #fff; }
+  body  { font-family: sans-serif; font-size: 13px; margin: 0; line-height: 1.6; __BODY_STYLE__ }
   h2    { margin-bottom: 6px; }
-  h3    { margin: 14px 0 4px; color: #2a5a9a; }
+  h3    { margin: 14px 0 4px; color: __H3_COLOR__; }
   p     { margin: 4px 0 8px; }
   ul    { margin: 4px 0 8px; padding-left: 20px; }
   li    { margin-bottom: 3px; }
-  code  { background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
-  .img-wrap { margin: 12px 0; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+  code  { background: __CODE_BG__; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .img-wrap { margin: 12px 0; border: 1px solid __BORDER_COLOR__; border-radius: 4px; overflow: hidden; }
   .img-wrap img { max-width: 100%; display: block; }
   table { border-collapse: collapse; width: 100%; margin: 4px 0 8px; }
   td    { padding: 3px 8px; vertical-align: top; }
-  td:first-child { white-space: nowrap; font-weight: bold; font-size: 12px; color: #444; }
+  td:first-child { white-space: nowrap; font-weight: bold; font-size: 12px; color: __TEXT_COLOR__; }
 </style>
 <h2>Bulk Markers</h2>
 <p>This feature lets you load a list of coordinates in any supported format,
@@ -1150,7 +1192,7 @@ display them on the map, and save as a standalone HTML file with an interactive 
 
 <h3>Entering coordinates</h3>
 <p>One point per line. Lines with errors are highlighted
-<span style="color:#c00; font-weight:bold">in red</span>.
+<span style="color:__DANGER_COLOR__; font-weight:bold">in red</span>.
 The count of valid and invalid lines is shown below the input field.</p>
 
 <h3>Order: «Coords first» / «Label first»</h3>
@@ -1190,7 +1232,13 @@ the saved file will include a table panel in the bottom-right corner listing all
   <li>Click a row — the map centers on that point and a popup opens with coordinates and MGRS.</li>
   <li>Click any marker — shows label, MGRS coordinate, and decimal coordinates.</li>
 </ul>
-)";
+)")
+        .replace("__BODY_STYLE__", bodyStyle)
+        .replace("__H3_COLOR__", tc.link)
+        .replace("__CODE_BG__", codeBg)
+        .replace("__BORDER_COLOR__", tc.border)
+        .replace("__TEXT_COLOR__", tc.text)
+        .replace("__DANGER_COLOR__", tc.danger);
 
     const QString& kHtml = appLangIsEnglish() ? kHtmlEn : kHtmlUk;
 
@@ -1216,18 +1264,21 @@ the saved file will include a table panel in the bottom-right corner listing all
 }
 
 void MainWindow::onShowPrivacy() {
-    static const QString kHtmlUk = R"prv(
+    const Theme::Colors tc = Theme::colors();
+    const QString bodyStyle = QString("color:%1; background:%2;").arg(tc.text, tc.bg);
+
+    const QString kHtmlUk = QString(R"prv(
 <style>
-  body { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
+  body { font-family: sans-serif; font-size: 13px; margin: 0; __BODY_STYLE__ }
   h2   { margin-bottom: 6px; }
-  h3   { margin: 14px 0 4px; color: #2a5a9a; }
+  h3   { margin: 14px 0 4px; color: __H3_COLOR__; }
   ul   { margin: 4px 0 4px 0; padding-left: 20px; }
   li   { margin-bottom: 3px; }
-  .ok  { color: #2a7a2a; font-weight: bold; }
-  .warn{ color: #7a5a00; font-weight: bold; }
-  .key { font-family: monospace; background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
-  .box { background: #f0f6e8; border: 1px solid #b8d4a0; border-radius: 5px; padding: 8px 12px; margin-top: 10px; }
-  .mil { background: #fff8e8; border: 1px solid #e0b840; border-radius: 5px; padding: 10px 14px; margin-bottom: 12px; }
+  .ok  { color: __OK_COLOR__; font-weight: bold; }
+  .warn{ color: __WARN_COLOR__; font-weight: bold; }
+  .key { font-family: monospace; background: __KEY_BG__; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .box { background: __PANEL_BG__; border: 1px solid __OK_COLOR__; border-radius: 5px; padding: 8px 12px; margin-top: 10px; }
+  .mil { background: __PANEL_BG__; border: 1px solid __WARN_COLOR__; border-radius: 5px; padding: 10px 14px; margin-bottom: 12px; }
 </style>
 <h2>Безпека даних</h2>
 
@@ -1285,20 +1336,26 @@ void MainWindow::onShowPrivacy() {
   <span class="ok">✓</span> &nbsp;Програма не має власних серверів і не відправляє дані розробнику.
   Весь код відкритий і доступний для перевірки.
 </div>
-)prv";
+)prv")
+        .replace("__BODY_STYLE__", bodyStyle)
+        .replace("__H3_COLOR__", tc.link)
+        .replace("__OK_COLOR__", tc.success)
+        .replace("__WARN_COLOR__", tc.warning)
+        .replace("__KEY_BG__", tc.panelBg)
+        .replace("__PANEL_BG__", tc.panelBg);
 
-    static const QString kHtmlEn = R"prv(
+    const QString kHtmlEn = QString(R"prv(
 <style>
-  body { font-family: sans-serif; font-size: 13px; margin: 0; color: #1a1a1a; background: #fff; }
+  body { font-family: sans-serif; font-size: 13px; margin: 0; __BODY_STYLE__ }
   h2   { margin-bottom: 6px; }
-  h3   { margin: 14px 0 4px; color: #2a5a9a; }
+  h3   { margin: 14px 0 4px; color: __H3_COLOR__; }
   ul   { margin: 4px 0 4px 0; padding-left: 20px; }
   li   { margin-bottom: 3px; }
-  .ok  { color: #2a7a2a; font-weight: bold; }
-  .warn{ color: #7a5a00; font-weight: bold; }
-  .key { font-family: monospace; background: #eee; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
-  .box { background: #f0f6e8; border: 1px solid #b8d4a0; border-radius: 5px; padding: 8px 12px; margin-top: 10px; }
-  .mil { background: #fff8e8; border: 1px solid #e0b840; border-radius: 5px; padding: 10px 14px; margin-bottom: 12px; }
+  .ok  { color: __OK_COLOR__; font-weight: bold; }
+  .warn{ color: __WARN_COLOR__; font-weight: bold; }
+  .key { font-family: monospace; background: __KEY_BG__; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  .box { background: __PANEL_BG__; border: 1px solid __OK_COLOR__; border-radius: 5px; padding: 8px 12px; margin-top: 10px; }
+  .mil { background: __PANEL_BG__; border: 1px solid __WARN_COLOR__; border-radius: 5px; padding: 10px 14px; margin-bottom: 12px; }
 </style>
 <h2>Data Privacy</h2>
 
@@ -1356,7 +1413,13 @@ it is a core architectural requirement:<br><br>
   <span class="ok">✓</span> &nbsp;The app has no backend servers and sends no data to the developer.
   The full source code is open and available for review.
 </div>
-)prv";
+)prv")
+        .replace("__BODY_STYLE__", bodyStyle)
+        .replace("__H3_COLOR__", tc.link)
+        .replace("__OK_COLOR__", tc.success)
+        .replace("__WARN_COLOR__", tc.warning)
+        .replace("__KEY_BG__", tc.panelBg)
+        .replace("__PANEL_BG__", tc.panelBg);
 
     const QString& kHtml = appLangIsEnglish() ? kHtmlEn : kHtmlUk;
 

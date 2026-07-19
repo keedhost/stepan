@@ -1,5 +1,6 @@
 #include "TrayManager.h"
 #include "AppLocale.h"
+#include "Theme.h"
 
 #include <QSystemTrayIcon>
 #include <QMenu>
@@ -29,19 +30,22 @@ TrayManager::TrayManager(QObject* parent) : QObject(parent) {
     vl->setContentsMargins(10, 8, 10, 6);
     vl->setSpacing(4);
 
+    const Theme::Colors tc = Theme::colors();
+
     auto* lbl = new QLabel(appTr("Введіть координати:", "Enter coordinates:"));
-    lbl->setStyleSheet("font-weight: bold; font-size: 12px; color: #222;");
+    lbl->setStyleSheet(QString("font-weight: bold; font-size: 12px; color: %1;").arg(tc.text));
 
     m_coordInput = new QLineEdit();
     m_coordInput->setPlaceholderText("MGRS, DD, DMS, UTM...");
     m_coordInput->setMinimumHeight(28);
-    m_coordInput->setStyleSheet(
+    m_coordInput->setStyleSheet(QString(
         "QLineEdit { font-family: monospace; font-size: 12px; "
-        "padding: 3px 6px; border: 1px solid #bbb; border-radius: 4px; }"
-    );
+        "padding: 3px 6px; border: 1px solid %1; border-radius: 4px; "
+        "background: %2; color: %3; }"
+    ).arg(tc.border, tc.inputBg, tc.text));
 
     auto* hint = new QLabel(appTr("Натисніть Enter для відкриття", "Press Enter to open"));
-    hint->setStyleSheet("font-size: 10px; color: #888;");
+    hint->setStyleSheet(QString("font-size: 10px; color: %1;").arg(tc.textMuted));
 
     vl->addWidget(lbl);
     vl->addWidget(m_coordInput);
