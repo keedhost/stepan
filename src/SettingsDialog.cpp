@@ -10,6 +10,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QGroupBox>
+#include <QTabWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFormLayout>
@@ -20,14 +21,23 @@
 
 SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     setWindowTitle(appTr("Налаштування", "Settings"));
-    setMinimumWidth(440);
+    setMinimumWidth(460);
     setModal(true);
 
     auto* root = new QVBoxLayout(this);
     root->setSpacing(10);
 
+    auto* tabs = new QTabWidget(this);
+    root->addWidget(tabs);
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Вкладка «Загальні»
+    // ════════════════════════════════════════════════════════════════════════
+    auto* generalTab    = new QWidget(tabs);
+    auto* generalLayout = new QVBoxLayout(generalTab);
+
     // ── Запуск ────────────────────────────────────────────────────────────────
-    auto* launchBox    = new QGroupBox(appTr("Запуск", "Startup"), this);
+    auto* launchBox    = new QGroupBox(appTr("Запуск", "Startup"), generalTab);
     auto* launchLayout = new QVBoxLayout(launchBox);
 
     m_autoStart = new QCheckBox(appTr("Запускати при вході в систему", "Launch at login"), launchBox);
@@ -40,19 +50,56 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     m_startMinimized = new QCheckBox(appTr("Запускати мінімізованим (без відкриття вікна)", "Start minimized (no window)"), launchBox);
     launchLayout->addWidget(m_startMinimized);
 
-    root->addWidget(launchBox);
+    generalLayout->addWidget(launchBox);
 
     // ── Поведінка ─────────────────────────────────────────────────────────────
-    auto* behavBox    = new QGroupBox(appTr("Поведінка", "Behavior"), this);
+    auto* behavBox    = new QGroupBox(appTr("Поведінка", "Behavior"), generalTab);
     auto* behavLayout = new QVBoxLayout(behavBox);
 
     m_disableCloseToTray = new QCheckBox(appTr("Не згортати в трей при закритті", "Don't minimize to tray on close"), behavBox);
     behavLayout->addWidget(m_disableCloseToTray);
 
-    root->addWidget(behavBox);
+    generalLayout->addWidget(behavBox);
+
+    // ── Трей ──────────────────────────────────────────────────────────────────
+    auto* trayBox  = new QGroupBox(appTr("Трей", "Tray"), generalTab);
+    auto* trayForm = new QFormLayout(trayBox);
+
+    m_trayIconStyle = new QComboBox(trayBox);
+    m_trayIconStyle->addItem(appTr("Чорна на білому (BW)", "Black on white (BW)"), "bw");
+    m_trayIconStyle->addItem(appTr("Біла на чорному (WB)", "White on black (WB)"), "wb");
+    trayForm->addRow(appTr("Іконка трею:", "Tray icon:"), m_trayIconStyle);
+
+    generalLayout->addWidget(trayBox);
+
+    // ── Мова / Language ───────────────────────────────────────────────────────
+    auto* langBox  = new QGroupBox(appTr("Мова", "Language"), generalTab);
+    auto* langForm = new QFormLayout(langBox);
+
+    m_language = new QComboBox(langBox);
+    m_language->addItem("Українська", "uk");
+    m_language->addItem("English",    "en");
+    langForm->addRow(appTr("Мова інтерфейсу:", "Interface language:"), m_language);
+
+    auto* restartNote = new QLabel(
+        appTr("Для застосування мови перезапустіть програму.",
+              "Restart the app to apply the language change."), langBox);
+    restartNote->setStyleSheet("color: #888; font-size: 11px;");
+    langForm->addRow(restartNote);
+
+    generalLayout->addWidget(langBox);
+    generalLayout->addStretch();
+
+    tabs->addTab(generalTab, appTr("Загальні", "General"));
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Вкладка «Карта»
+    // ════════════════════════════════════════════════════════════════════════
+    auto* mapTab    = new QWidget(tabs);
+    auto* mapTabLayout = new QVBoxLayout(mapTab);
 
     // ── Карта ─────────────────────────────────────────────────────────────────
-    auto* mapBox  = new QGroupBox(appTr("Карта", "Map"), this);
+    auto* mapBox  = new QGroupBox(appTr("Карта", "Map"), mapTab);
     auto* mapForm = new QFormLayout(mapBox);
 
     m_defaultMap = new QComboBox(mapBox);
@@ -61,10 +108,10 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     m_defaultMap->addItem(appTr("Топографічна", "Topographic"),    "topo");
     mapForm->addRow(appTr("Джерело за замовчуванням:", "Default source:"), m_defaultMap);
 
-    root->addWidget(mapBox);
+    mapTabLayout->addWidget(mapBox);
 
     // ── Оффлайн карти ─────────────────────────────────────────────────────────
-    auto* offlineBox    = new QGroupBox(appTr("Оффлайн карти", "Offline Maps"), this);
+    auto* offlineBox    = new QGroupBox(appTr("Оффлайн карти", "Offline Maps"), mapTab);
     auto* offlineLayout = new QVBoxLayout(offlineBox);
 
     m_offlineEnabled = new QCheckBox(appTr("Використовувати оффлайн-карти", "Use offline maps"), offlineBox);
@@ -89,25 +136,22 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     m_offlineConfigWidget->setEnabled(false);
     offlineLayout->addWidget(m_offlineConfigWidget);
 
-    root->addWidget(offlineBox);
+    mapTabLayout->addWidget(offlineBox);
+    mapTabLayout->addStretch();
 
     connect(m_offlineEnabled, &QCheckBox::toggled, m_offlineConfigWidget, &QWidget::setEnabled);
     connect(m_offlineBrowse,  &QPushButton::clicked, this, &SettingsDialog::onBrowseOfflinePath);
     connect(m_offlineDownload, &QPushButton::clicked, this, &SettingsDialog::onDownloadOfflineTiles);
 
-    // ── Трей ──────────────────────────────────────────────────────────────────
-    auto* trayBox  = new QGroupBox(appTr("Трей", "Tray"), this);
-    auto* trayForm = new QFormLayout(trayBox);
+    tabs->addTab(mapTab, appTr("Карта", "Map"));
 
-    m_trayIconStyle = new QComboBox(trayBox);
-    m_trayIconStyle->addItem(appTr("Чорна на білому (BW)", "Black on white (BW)"), "bw");
-    m_trayIconStyle->addItem(appTr("Біла на чорному (WB)", "White on black (WB)"), "wb");
-    trayForm->addRow(appTr("Іконка трею:", "Tray icon:"), m_trayIconStyle);
+    // ════════════════════════════════════════════════════════════════════════
+    // Вкладка «Веб-інтерфейс»
+    // ════════════════════════════════════════════════════════════════════════
+    auto* webTab       = new QWidget(tabs);
+    auto* webTabLayout = new QVBoxLayout(webTab);
 
-    root->addWidget(trayBox);
-
-    // ── Веб-інтерфейс ─────────────────────────────────────────────────────────
-    auto* webBox    = new QGroupBox(appTr("Веб-інтерфейс", "Web Interface"), this);
+    auto* webBox    = new QGroupBox(appTr("Веб-інтерфейс", "Web Interface"), webTab);
     auto* webLayout = new QVBoxLayout(webBox);
 
     m_webEnabled = new QCheckBox(appTr("Увімкнути вбудований веб-сервер", "Enable built-in web server"), webBox);
@@ -136,24 +180,10 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     m_webUrlLabel->setStyleSheet("color: #2a5a9a; font-size: 12px; padding-top: 2px;");
     webLayout->addWidget(m_webUrlLabel);
 
-    root->addWidget(webBox);
+    webTabLayout->addWidget(webBox);
+    webTabLayout->addStretch();
 
-    // ── Мова / Language ───────────────────────────────────────────────────────
-    auto* langBox  = new QGroupBox(appTr("Мова", "Language"), this);
-    auto* langForm = new QFormLayout(langBox);
-
-    m_language = new QComboBox(langBox);
-    m_language->addItem("Українська", "uk");
-    m_language->addItem("English",    "en");
-    langForm->addRow(appTr("Мова інтерфейсу:", "Interface language:"), m_language);
-
-    auto* restartNote = new QLabel(
-        appTr("Для застосування мови перезапустіть програму.",
-              "Restart the app to apply the language change."), langBox);
-    restartNote->setStyleSheet("color: #888; font-size: 11px;");
-    langForm->addRow(restartNote);
-
-    root->addWidget(langBox);
+    tabs->addTab(webTab, appTr("Веб-інтерфейс", "Web Interface"));
 
     // ── Кнопки ───────────────────────────────────────────────────────────────
     auto* btns = new QDialogButtonBox(
