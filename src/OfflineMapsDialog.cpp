@@ -309,12 +309,12 @@ void OfflineMapsDialog::onDownloadClicked() {
     const TileDownloader::Region region = currentRegion();
     const qint64 count = TileDownloader::estimateTileCount(region);
     if (count > kWarnTileCount) {
-        const auto choice = QMessageBox::question(this,
+        const bool proceed = askAppYesNo(this,
             appTr("Багато тайлів", "Many tiles"),
             appTr("Буде завантажено приблизно %1 тайлів. Це може зайняти багато часу та місця на диску. Продовжити?",
                   "About %1 tiles will be downloaded. This may take a long time and disk space. Continue?")
                 .arg(count));
-        if (choice != QMessageBox::Yes) return;
+        if (!proceed) return;
     }
 
     setConfigEnabled(false);

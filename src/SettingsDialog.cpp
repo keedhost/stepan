@@ -188,6 +188,11 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     // ── Кнопки ───────────────────────────────────────────────────────────────
     auto* btns = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    // QDialogButtonBox's standard buttons use Qt's own translation catalog
+    // (qtbase_*.qm), which this app doesn't ship — override the text with
+    // our own appTr() so it actually follows the selected app language.
+    btns->button(QDialogButtonBox::Ok)->setText(appTr("OK", "OK"));
+    btns->button(QDialogButtonBox::Cancel)->setText(appTr("Скасувати", "Cancel"));
     connect(btns, &QDialogButtonBox::accepted, this, &SettingsDialog::onAccepted);
     connect(btns, &QDialogButtonBox::rejected, this, &QDialog::reject);
     root->addWidget(btns);
@@ -277,7 +282,7 @@ void SettingsDialog::onBrowseOfflinePath() {
 
 void SettingsDialog::onDownloadOfflineTiles() {
     if (m_offlinePath->text().trimmed().isEmpty()) {
-        QMessageBox::information(this,
+        showAppInfo(this,
             appTr("Оффлайн карти", "Offline Maps"),
             appTr("Спочатку оберіть папку для оффлайн-карт.", "Select a folder for offline maps first."));
         return;

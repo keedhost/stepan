@@ -8,6 +8,7 @@
 #include <QTabWidget>
 #include <QTextBrowser>
 #include <QDialogButtonBox>
+#include <QPushButton>
 #include <QFrame>
 #include <QPixmap>
 #include <QFont>
@@ -317,6 +318,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
 
     // ── Close button ──────────────────────────────────────────────────────────
     auto* btns = new QDialogButtonBox(QDialogButtonBox::Close, this);
+    btns->button(QDialogButtonBox::Close)->setText(appTr("Закрити", "Close"));
     connect(btns, &QDialogButtonBox::rejected, this, &QDialog::accept);
     root->addWidget(btns);
 }

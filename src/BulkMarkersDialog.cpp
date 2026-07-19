@@ -1,5 +1,6 @@
 #include "BulkMarkersDialog.h"
 #include "CoordinateParser.h"
+#include "AppLocale.h"
 
 #include <QPlainTextEdit>
 #include <QLabel>
@@ -339,7 +340,7 @@ void BulkMarkersDialog::onDownloadHtml() {
 
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "Помилка",
+        showAppWarning(this, "Помилка",
             QString("Не вдалося зберегти файл:\n%1").arg(path));
         return;
     }
@@ -348,6 +349,6 @@ void BulkMarkersDialog::onDownloadHtml() {
     out << html;
     file.close();
 
-    QMessageBox::information(this, "Збережено",
+    showAppInfo(this, "Збережено",
         QString("Файл збережено:\n%1\n\nВідкрийте його у браузері для перегляду карти.").arg(path));
 }

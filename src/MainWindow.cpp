@@ -537,11 +537,11 @@ void MainWindow::applyOfflineMapSettings() {
     QDirIterator it(path + "/" + key, {"*.png"}, QDir::Files, QDirIterator::Subdirectories);
     if (it.hasNext()) return; // tiles already cached for this map type
 
-    const auto choice = QMessageBox::question(this,
+    const bool download = askAppYesNo(this,
         appTr("Оффлайн карти", "Offline Maps"),
         appTr("У обраній папці немає завантажених тайлів для поточної карти. Завантажити зараз?",
               "The selected folder has no cached tiles for the current map. Download now?"));
-    if (choice == QMessageBox::Yes) {
+    if (download) {
         OfflineMapsDialog dlg(path, key, this);
         dlg.exec();
     }
@@ -810,6 +810,7 @@ $ stepan "48.020991, 37.810247"</pre>
     browser->setReadOnly(true);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dlg);
+    buttons->button(QDialogButtonBox::Close)->setText(appTr("Закрити", "Close"));
     connect(buttons, &QDialogButtonBox::rejected, dlg, &QDialog::accept);
 
     auto* layout = new QVBoxLayout(dlg);
@@ -950,6 +951,7 @@ $ curl "http://localhost:8080/api/convert?q=invalid"
     browser->setReadOnly(true);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dlg);
+    buttons->button(QDialogButtonBox::Close)->setText(appTr("Закрити", "Close"));
     connect(buttons, &QDialogButtonBox::rejected, dlg, &QDialog::accept);
 
     auto* layout = new QVBoxLayout(dlg);
@@ -1203,6 +1205,7 @@ the saved file will include a table panel in the bottom-right corner listing all
     browser->setHtml(kHtml);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dlg);
+    buttons->button(QDialogButtonBox::Close)->setText(appTr("Закрити", "Close"));
     connect(buttons, &QDialogButtonBox::rejected, dlg, &QDialog::accept);
 
     auto* layout = new QVBoxLayout(dlg);
@@ -1367,6 +1370,7 @@ it is a core architectural requirement:<br><br>
     browser->setReadOnly(true);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dlg);
+    buttons->button(QDialogButtonBox::Close)->setText(appTr("Закрити", "Close"));
     connect(buttons, &QDialogButtonBox::rejected, dlg, &QDialog::accept);
 
     auto* layout = new QVBoxLayout(dlg);
@@ -1396,7 +1400,7 @@ void MainWindow::onCheckForUpdates() {
         unsetCursor();
 
         if (reply->error() != QNetworkReply::NoError) {
-            QMessageBox::warning(this,
+            showAppWarning(this,
                 appTr("Перевірка оновлень", "Check for Updates"),
                 appTr("Не вдалося перевірити оновлення: ", "Could not check for updates: ")
                     + reply->errorString());
@@ -1414,20 +1418,19 @@ void MainWindow::onCheckForUpdates() {
             QString::fromLatin1(APP_VERSION_FULL));
 
         if (tag.isEmpty() || latest.isNull() || latest <= current) {
-            QMessageBox::information(this,
+            showAppInfo(this,
                 appTr("Перевірка оновлень", "Check for Updates"),
                 appTr("Ви використовуєте найсвіжішу версію.", "You are using the latest version."));
             return;
         }
 
-        const auto choice = QMessageBox::question(this,
+        const bool openPage = askAppYesNo(this,
             appTr("Доступне оновлення", "Update Available"),
             appTr("Доступна нова версія %1 (поточна — %2).\nВідкрити сторінку завантаження?",
                   "A new version %1 is available (current — %2).\nOpen the download page?")
-                .arg(latest.toString(), current.toString()),
-            QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+                .arg(latest.toString(), current.toString()));
 
-        if (choice == QMessageBox::Yes && !htmlUrl.isEmpty())
+        if (openPage && !htmlUrl.isEmpty())
             QDesktopServices::openUrl(QUrl(htmlUrl));
     });
 }
