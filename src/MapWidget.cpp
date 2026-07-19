@@ -1,7 +1,9 @@
 #include "MapWidget.h"
+#include "TileSchemeHandler.h"
 #include <QVBoxLayout>
 #include <QWebEngineView>
 #include <QWebEnginePage>
+#include <QWebEngineProfile>
 #include <QWebEngineSettings>
 #include <QUrl>
 #include <QJsonDocument>
@@ -15,9 +17,19 @@ MapWidget::MapWidget(QWidget* parent) : QWidget(parent) {
 
     m_view = new QWebEngineView(this);
 
-    // Allow loading external tile servers from a qrc:// origin
+    // Allow loading external tile servers from a qrc:// origin.
     m_view->settings()->setAttribute(QWebEngineSettings::LocalContentCanAccessRemoteUrls, true);
     m_view->settings()->setAttribute(QWebEngineSettings::JavascriptEnabled, true);
+
+    // Offline tiles are served through a custom "stepan-tile://" scheme —
+    // Chromium hard-blocks file:// subresource loads from a qrc:// page
+    // regardless of LocalContentCanAccessFileUrls, so a registered scheme
+    // handler is the supported way to hand it local bytes (see
+    // TileSchemeHandler.h). The scheme itself is registered once in main().
+    m_tileSchemeHandler = new TileSchemeHandler(this);
+    auto* profile = m_view->page()->profile();
+    if (!profile->urlSchemeHandler("stepan-tile"))
+        profile->installUrlSchemeHandler("stepan-tile", m_tileSchemeHandler);
 
     connect(m_view, &QWebEngineView::loadFinished, this, [this](bool ok) {
         if (!ok) return;
@@ -28,6 +40,15 @@ MapWidget::MapWidget(QWidget* parent) : QWidget(parent) {
             setZone(m_pending.swLat, m_pending.swLon, m_pending.neLat, m_pending.neLon);
         }
         m_pending.type = PendingType::None;
+        if (!m_pendingLayerKey.isEmpty()) {
+            const QString key = m_pendingLayerKey;
+            m_pendingLayerKey.clear();
+            setLayer(key);
+        }
+        if (m_pendingOfflineSet) {
+            setOfflineMode(m_pendingOfflineEnabled, m_pendingOfflinePath);
+            m_pendingOfflineSet = false;
+        }
     });
 
     m_view->setUrl(QUrl("qrc:/map.html"));
@@ -65,7 +86,23 @@ void MapWidget::clearCoordinate() {
 }
 
 void MapWidget::setLayer(const QString& key) {
+    if (!m_loaded) {
+        m_pendingLayerKey = key;
+        return;
+    }
     runJs(QString("setLayer('%1');").arg(key));
+}
+
+void MapWidget::setOfflineMode(bool enabled, const QString& folderPath) {
+    m_tileSchemeHandler->setBasePath(folderPath);
+
+    if (!m_loaded) {
+        m_pendingOfflineSet     = true;
+        m_pendingOfflineEnabled = enabled;
+        m_pendingOfflinePath    = folderPath;
+        return;
+    }
+    runJs(QString("setOfflineMode(%1);").arg(enabled && !folderPath.isEmpty() ? "true" : "false"));
 }
 
 void MapWidget::setBulkMarkers(const QVector<BulkMarker>& markers) {

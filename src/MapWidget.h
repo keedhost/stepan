@@ -5,6 +5,7 @@
 
 QT_FORWARD_DECLARE_CLASS(QWebEngineView)
 QT_FORWARD_DECLARE_CLASS(QPixmap)
+class TileSchemeHandler;
 
 struct BulkMarker {
     double  lat   = 0;
@@ -26,12 +27,17 @@ public:
     void setBulkMarkers(const QVector<BulkMarker>& markers);
     void clearBulkMarkers();
 
+    // enabled=false clears offline mode (falls back to online tiles).
+    // folderPath is the offline maps root, containing <type>/<z>/<x>/<y>.png.
+    void setOfflineMode(bool enabled, const QString& folderPath);
+
     QPixmap grabMap() const;
 
     static QString exportBulkMarkersHtml(const QVector<BulkMarker>& markers, bool showTable = false);
 
 private:
-    QWebEngineView* m_view;
+    QWebEngineView*    m_view;
+    TileSchemeHandler* m_tileSchemeHandler;
     bool m_loaded = false;
 
     enum class PendingType { None, Point, Zone };
@@ -41,6 +47,12 @@ private:
         double swLat = 0, swLon = 0, neLat = 0, neLon = 0;
     };
     PendingState m_pending;
+
+    bool    m_pendingOfflineSet     = false;
+    bool    m_pendingOfflineEnabled = false;
+    QString m_pendingOfflinePath;
+
+    QString m_pendingLayerKey; // empty = nothing pending
 
     void runJs(const QString& js);
 };

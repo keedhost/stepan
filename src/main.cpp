@@ -10,6 +10,7 @@
 #include <QList>
 #include <QPair>
 #include <QSettings>
+#include <QWebEngineUrlScheme>
 #ifdef Q_OS_WIN
 #  include <windows.h>
 #  include <io.h>
@@ -210,6 +211,12 @@ static bool isConsoleMode(int argc, char* argv[]) {
 int main(int argc, char* argv[]) {
     if (isConsoleMode(argc, argv))
         return runConsole(argc, argv);
+
+    // Must be registered before QApplication is constructed. Serves offline
+    // map tiles to MapWidget's embedded page (see TileSchemeHandler.h).
+    QWebEngineUrlScheme tileScheme("stepan-tile");
+    tileScheme.setFlags(QWebEngineUrlScheme::LocalAccessAllowed | QWebEngineUrlScheme::CorsEnabled);
+    QWebEngineUrlScheme::registerScheme(tileScheme);
 
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
 

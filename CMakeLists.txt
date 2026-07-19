@@ -79,6 +79,10 @@ qt_add_executable(Stepan
     src/WebServer.cpp
     src/AboutDialog.cpp
     src/BulkMarkersDialog.cpp
+    src/TileDownloader.cpp
+    src/OfflineMapsDialog.cpp
+    src/RegionPresets.cpp
+    src/TileSchemeHandler.cpp
     resources/resources.qrc
 )
 

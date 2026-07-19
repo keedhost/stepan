@@ -2,14 +2,20 @@
 #include "AppLocale.h"
 #include "AutoStart.h"
 #include "WebServer.h"
+#include "OfflineMapsDialog.h"
 #include <QCheckBox>
 #include <QComboBox>
 #include <QSpinBox>
 #include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
 #include <QGroupBox>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QFormLayout>
 #include <QDialogButtonBox>
+#include <QFileDialog>
+#include <QMessageBox>
 #include <QSettings>
 
 SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
@@ -56,6 +62,38 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     mapForm->addRow(appTr("Джерело за замовчуванням:", "Default source:"), m_defaultMap);
 
     root->addWidget(mapBox);
+
+    // ── Оффлайн карти ─────────────────────────────────────────────────────────
+    auto* offlineBox    = new QGroupBox(appTr("Оффлайн карти", "Offline Maps"), this);
+    auto* offlineLayout = new QVBoxLayout(offlineBox);
+
+    m_offlineEnabled = new QCheckBox(appTr("Використовувати оффлайн-карти", "Use offline maps"), offlineBox);
+    offlineLayout->addWidget(m_offlineEnabled);
+
+    m_offlineConfigWidget = new QWidget(offlineBox);
+    auto* offlineConfigLyt = new QVBoxLayout(m_offlineConfigWidget);
+    offlineConfigLyt->setContentsMargins(0, 4, 0, 0);
+
+    auto* pathRow = new QHBoxLayout();
+    m_offlinePath = new QLineEdit(m_offlineConfigWidget);
+    m_offlinePath->setReadOnly(true);
+    m_offlinePath->setPlaceholderText(appTr("Папку не обрано", "No folder selected"));
+    m_offlineBrowse = new QPushButton(appTr("Огляд...", "Browse..."), m_offlineConfigWidget);
+    pathRow->addWidget(m_offlinePath, 1);
+    pathRow->addWidget(m_offlineBrowse);
+    offlineConfigLyt->addLayout(pathRow);
+
+    m_offlineDownload = new QPushButton(appTr("Завантажити тайли...", "Download Tiles..."), m_offlineConfigWidget);
+    offlineConfigLyt->addWidget(m_offlineDownload);
+
+    m_offlineConfigWidget->setEnabled(false);
+    offlineLayout->addWidget(m_offlineConfigWidget);
+
+    root->addWidget(offlineBox);
+
+    connect(m_offlineEnabled, &QCheckBox::toggled, m_offlineConfigWidget, &QWidget::setEnabled);
+    connect(m_offlineBrowse,  &QPushButton::clicked, this, &SettingsDialog::onBrowseOfflinePath);
+    connect(m_offlineDownload, &QPushButton::clicked, this, &SettingsDialog::onDownloadOfflineTiles);
 
     // ── Трей ──────────────────────────────────────────────────────────────────
     auto* trayBox  = new QGroupBox(appTr("Трей", "Tray"), this);
@@ -145,6 +183,10 @@ void SettingsDialog::load() {
     const int mapIdx = m_defaultMap->findData(map);
     if (mapIdx >= 0) m_defaultMap->setCurrentIndex(mapIdx);
 
+    m_offlineEnabled->setChecked(s.value("offlineMapsEnabled", false).toBool());
+    m_offlinePath->setText(s.value("offlineMapsPath", QString()).toString());
+    m_offlineConfigWidget->setEnabled(m_offlineEnabled->isChecked());
+
     const QString trayStyle = s.value("trayIconStyle", "wb").toString();
     const int trayIdx = m_trayIconStyle->findData(trayStyle);
     if (trayIdx >= 0) m_trayIconStyle->setCurrentIndex(trayIdx);
@@ -171,6 +213,8 @@ void SettingsDialog::save() {
     s.setValue("startMinimized", m_startMinimized->isChecked());
     s.setValue("closeToTray",    !m_disableCloseToTray->isChecked());
     s.setValue("defaultMap",      m_defaultMap->currentData().toString());
+    s.setValue("offlineMapsEnabled", m_offlineEnabled->isChecked());
+    s.setValue("offlineMapsPath",    m_offlinePath->text());
     s.setValue("trayIconStyle",   m_trayIconStyle->currentData().toString());
     s.setValue("webEnabled",      m_webEnabled->isChecked());
     s.setValue("webAddress",     m_webAddress->currentData().toString());
@@ -191,6 +235,25 @@ void SettingsDialog::updateWebUrls() {
     for (const QString& url : urls)
         links << QString("<a href='%1'>%1</a>").arg(url);
     m_webUrlLabel->setText(appTr("Доступно за: ", "Available at: ") + links.join(" &nbsp;·&nbsp; "));
+}
+
+void SettingsDialog::onBrowseOfflinePath() {
+    const QString dir = QFileDialog::getExistingDirectory(this,
+        appTr("Обрати папку для оффлайн-карт", "Select offline maps folder"),
+        m_offlinePath->text());
+    if (!dir.isEmpty())
+        m_offlinePath->setText(dir);
+}
+
+void SettingsDialog::onDownloadOfflineTiles() {
+    if (m_offlinePath->text().trimmed().isEmpty()) {
+        QMessageBox::information(this,
+            appTr("Оффлайн карти", "Offline Maps"),
+            appTr("Спочатку оберіть папку для оффлайн-карт.", "Select a folder for offline maps first."));
+        return;
+    }
+    OfflineMapsDialog dlg(m_offlinePath->text(), m_defaultMap->currentData().toString(), this);
+    dlg.exec();
 }
 
 void SettingsDialog::onAccepted() {

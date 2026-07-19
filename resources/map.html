@@ -49,22 +49,64 @@ var map = L.map('map', { zoomControl: true }).setView([48.5, 31.5], 6);
 var marker   = null;
 var zoneRect = null;
 
+// Online tile URL templates (note: Esri's ortho endpoint numbers tiles as
+// {z}/{y}/{x}, unlike the {z}/{x}/{y} convention everyone else uses).
+var onlineUrls = {
+  streets: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  ortho:   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  topo:    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
+};
+var layerAttribution = {
+  streets: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  ortho:   '&copy; Esri, Maxar, Earthstar Geographics',
+  topo:    '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+};
+var layerMaxZoom = { streets: 19, ortho: 19, topo: 17 };
+
+// Offline mode: tiles are cached on disk as <base>/<type>/{z}/{x}/{y}.png
+// (always this standard XYZ layout, regardless of the online source's own
+// numbering scheme — TileDownloader normalizes that when saving) and served
+// to this page via the custom "stepan-tile://" scheme, which MapWidget
+// resolves against the offline folder in C++. Plain file:// URLs don't work
+// here — Chromium blocks file:// subresource loads from a qrc:// page.
+var offlineMode = false;
+
+// Retry a tile once on error (e.g. a transient network hiccup) instead of
+// leaving it permanently blank.
+function attachTileRetry(layer) {
+  layer.on('tileerror', function(e) {
+    if (e.tile.dataset.retried) return;
+    e.tile.dataset.retried = '1';
+    setTimeout(function() {
+      const src = e.tile.src;
+      e.tile.src = '';
+      e.tile.src = src;
+    }, 1000);
+  });
+  return layer;
+}
+
+function buildLayer(key) {
+  if (offlineMode) {
+    return attachTileRetry(L.tileLayer('stepan-tile:///' + key + '/{z}/{x}/{y}.png', {
+      attribution: layerAttribution[key],
+      maxZoom: layerMaxZoom[key]
+    }));
+  }
+  return attachTileRetry(L.tileLayer(onlineUrls[key], {
+    attribution: layerAttribution[key],
+    maxZoom: layerMaxZoom[key]
+  }));
+}
+
 var baseLayers = {
-  streets: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    maxZoom: 19
-  }),
-  ortho: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: '&copy; Esri, Maxar, Earthstar Geographics',
-    maxZoom: 19
-  }),
-  topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
-    maxZoom: 17
-  })
+  streets: buildLayer('streets'),
+  ortho:   buildLayer('ortho'),
+  topo:    buildLayer('topo')
 };
 
-// Labels overlay for layers that lack built-in labels (ortho)
+// Labels overlay for layers that lack built-in labels (ortho) — online only,
+// there is no offline equivalent cached for this overlay.
 var orthoLabels = L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
   { attribution: '', maxZoom: 19 }
@@ -74,6 +116,29 @@ var orthoLabelsVisible = false;
 baseLayers.streets.addTo(map);
 var currentLayerKey = 'streets';
 var statusTimer = null;
+
+// Single source of truth for "what should be on the map right now", derived
+// from (currentLayerKey, offlineMode). setLayer() and setOfflineMode() each
+// just update their own bit of state and call this — rebuilding fully from
+// scratch every time avoids the two functions ever disagreeing about which
+// layer/overlay should be visible, regardless of call order.
+function refreshActiveLayer() {
+  Object.keys(baseLayers).forEach(function(k) { map.removeLayer(baseLayers[k]); });
+  if (orthoLabelsVisible) { map.removeLayer(orthoLabels); orthoLabelsVisible = false; }
+
+  baseLayers = { streets: buildLayer('streets'), ortho: buildLayer('ortho'), topo: buildLayer('topo') };
+  baseLayers[currentLayerKey].addTo(map);
+
+  if (currentLayerKey === 'ortho' && !offlineMode) {
+    orthoLabels.addTo(map);
+    orthoLabelsVisible = true;
+  }
+}
+
+function setOfflineMode(enabled) {
+  offlineMode = enabled;
+  refreshActiveLayer();
+}
 
 function showStatus(msg) {
   var el = document.getElementById('status');
@@ -119,19 +184,9 @@ function setZone(swLat, swLon, neLat, neLon) {
 }
 
 function setLayer(key) {
-  if (baseLayers[currentLayerKey]) map.removeLayer(baseLayers[currentLayerKey]);
-  if (orthoLabelsVisible) {
-    map.removeLayer(orthoLabels);
-    orthoLabelsVisible = false;
-  }
-  if (baseLayers[key]) {
-    baseLayers[key].addTo(map);
-    currentLayerKey = key;
-  }
-  if (key === 'ortho') {
-    orthoLabels.addTo(map);
-    orthoLabelsVisible = true;
-  }
+  if (!baseLayers[key]) return;
+  currentLayerKey = key;
+  refreshActiveLayer();
 }
 
 // ── Bulk markers ──────────────────────────────────────────────────────────────

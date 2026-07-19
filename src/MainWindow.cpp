@@ -4,7 +4,11 @@
 #include "SettingsDialog.h"
 #include "AboutDialog.h"
 #include "WebServer.h"
+#include "OfflineMapsDialog.h"
 #include "AppLocale.h"
+
+#include <QDir>
+#include <QDirIterator>
 
 #include <QLineEdit>
 #include <QLabel>
@@ -140,6 +144,7 @@ MainWindow::MainWindow(QWidget* parent)
     });
 
     applyWebSettings();
+    applyOfflineMapSettings();
 }
 
 void MainWindow::setupUi() {
@@ -501,6 +506,7 @@ void MainWindow::onShowSettings() {
     }
 
     applyWebSettings();
+    applyOfflineMapSettings();
 }
 
 void MainWindow::applyWebSettings() {
@@ -514,6 +520,30 @@ void MainWindow::applyWebSettings() {
     } else {
         if (m_webServer->isRunning())
             m_webServer->stop();
+    }
+}
+
+void MainWindow::applyOfflineMapSettings() {
+    QSettings s;
+    const bool enabled = s.value("offlineMapsEnabled", false).toBool();
+    const QString path = s.value("offlineMapsPath", QString()).toString();
+    m_mapWidget->setOfflineMode(enabled, path);
+
+    if (!enabled || path.isEmpty()) return;
+
+    auto* checked = m_mapBtnGroup->checkedButton();
+    const QString key = checked ? checked->property("mapKey").toString() : QStringLiteral("streets");
+
+    QDirIterator it(path + "/" + key, {"*.png"}, QDir::Files, QDirIterator::Subdirectories);
+    if (it.hasNext()) return; // tiles already cached for this map type
+
+    const auto choice = QMessageBox::question(this,
+        appTr("Оффлайн карти", "Offline Maps"),
+        appTr("У обраній папці немає завантажених тайлів для поточної карти. Завантажити зараз?",
+              "The selected folder has no cached tiles for the current map. Download now?"));
+    if (choice == QMessageBox::Yes) {
+        OfflineMapsDialog dlg(path, key, this);
+        dlg.exec();
     }
 }
 

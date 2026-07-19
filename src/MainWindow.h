@@ -80,4 +80,5 @@ private:
     void copyToClipboard(const QString& text);
     void flashCopied(QPushButton* btn);
     void applyWebSettings();
+    void applyOfflineMapSettings();
 };
