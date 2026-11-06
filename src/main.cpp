@@ -7,6 +7,7 @@
 #include <QCommandLineParser>
 #include <QTextStream>
 #include <QIcon>
+#include "Theme.h"
 #include <QList>
 #include <QPair>
 #include <QSettings>
@@ -228,6 +229,7 @@ int main(int argc, char* argv[]) {
     app.setApplicationVersion("1.0.0");
 
     appLangIsEnglish() = QSettings().value("language", "uk").toString() == "en";
+    Theme::applyMode(Theme::savedMode());
 
     QIcon appIcon;
     appIcon.addFile(":/icons/color/16.png",  {16, 16});

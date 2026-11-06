@@ -43,6 +43,8 @@ private:
     QLabel*    m_webUrlLabel    = nullptr;
     // Мова
     QComboBox* m_language       = nullptr;
+    // Тема
+    QComboBox* m_theme          = nullptr;
 
     void load();
     void save();

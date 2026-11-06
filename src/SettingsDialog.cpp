@@ -74,6 +74,18 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
 
     generalLayout->addWidget(trayBox);
 
+    // ── Оформлення ────────────────────────────────────────────────────────────
+    auto* themeBox  = new QGroupBox(appTr("Оформлення", "Appearance"), generalTab);
+    auto* themeForm = new QFormLayout(themeBox);
+
+    m_theme = new QComboBox(themeBox);
+    m_theme->addItem(appTr("Як у системі", "System"), "system");
+    m_theme->addItem(appTr("Світла",       "Light"),  "light");
+    m_theme->addItem(appTr("Темна",        "Dark"),   "dark");
+    themeForm->addRow(appTr("Тема:", "Theme:"), m_theme);
+
+    generalLayout->addWidget(themeBox);
+
     // ── Мова / Language ───────────────────────────────────────────────────────
     auto* langBox  = new QGroupBox(appTr("Мова", "Language"), generalTab);
     auto* langForm = new QFormLayout(langBox);
@@ -240,6 +252,9 @@ void SettingsDialog::load() {
     const int langIdx = m_language->findData(lang);
     if (langIdx >= 0) m_language->setCurrentIndex(langIdx);
 
+    const int themeIdx = m_theme->findData(Theme::savedMode());
+    if (themeIdx >= 0) m_theme->setCurrentIndex(themeIdx);
+
     updateWebUrls();
 }
 
@@ -257,6 +272,7 @@ void SettingsDialog::save() {
     s.setValue("webAddress",     m_webAddress->currentData().toString());
     s.setValue("webPort",        m_webPort->value());
     s.setValue("language",       m_language->currentData().toString());
+    s.setValue("theme",          m_theme->currentData().toString());
 }
 
 void SettingsDialog::updateWebUrls() {
@@ -296,4 +312,5 @@ void SettingsDialog::onDownloadOfflineTiles() {
 void SettingsDialog::onAccepted() {
     save();
     accept();
+    Theme::applyMode(m_theme->currentData().toString());
 }

@@ -1,6 +1,8 @@
 #pragma once
 #include <QApplication>
 #include <QPalette>
+#include <QSettings>
+#include <QStyleHints>
 #include <QString>
 #include <QStringList>
 
@@ -9,6 +11,21 @@
 // palette cascade (QDialogs don't inherit MainWindow's setStyleSheet(), and
 // QTextBrowser HTML needs explicit colors either way).
 namespace Theme {
+
+// User-selected theme: "system" (follow OS), "light" or "dark". Stored in
+// QSettings under "theme". Forcing a scheme via QStyleHints switches the
+// native palette, which fires QEvent::PaletteChange on widgets — MainWindow
+// already rebuilds its stylesheet on that, so the change applies live.
+inline QString savedMode() {
+    return QSettings().value("theme", "system").toString();
+}
+
+inline void applyMode(const QString& mode) {
+    auto* hints = QGuiApplication::styleHints();
+    if (mode == "light")      hints->setColorScheme(Qt::ColorScheme::Light);
+    else if (mode == "dark")  hints->setColorScheme(Qt::ColorScheme::Dark);
+    else                      hints->unsetColorScheme();
+}
 
 inline bool isDark() {
     return QApplication::palette().color(QPalette::Window).lightness() < 128;
