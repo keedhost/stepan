@@ -28,7 +28,11 @@ on:
     branches: [main, master]
 
 env:
-  QT_VERSION: '6.7.3'
+  # Qt for the Windows and macOS builds (Linux packages use the distro's Qt).
+  # 6.8+ is required on Windows: the Chromium in Qt 6.7.3's WebEngine crashes
+  # its sandboxed renderer on Windows build 26100 (Windows 11 24H2 / Server
+  # 2025): ProcessGone 3, 0xC0000005, blank map.
+  QT_VERSION: '6.8.3'
 
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -102,7 +106,7 @@ jobs:
           version: ${{ env.QT_VERSION }}
           host: windows
           target: desktop
-          arch: win64_msvc2019_64
+          arch: win64_msvc2022_64
           modules: qtwebengine qtwebchannel qtpositioning
           cache: true
 

@@ -31,8 +31,11 @@ set "BUILD_DIR=%ROOT_DIR%\build-windows"
 
 REM ── Locate Qt6 ───────────────────────────────────────────────
 if not defined CMAKE_PREFIX_PATH (
-    REM Try common install paths
+    REM Try common install paths. Qt 6.8+ first: the WebEngine in older Qt
+    REM leaves the map blank on Windows 11 24H2 (sandboxed renderer crash).
     for %%P in (
+        "C:\Qt\6.8.3\msvc2022_64"
+        "%USERPROFILE%\Qt\6.8.3\msvc2022_64"
         "C:\Qt\6.7.0\msvc2019_64"
         "C:\Qt\6.7.0\msvc2022_64"
         "C:\Qt\6.6.0\msvc2019_64"
