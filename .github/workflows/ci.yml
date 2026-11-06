@@ -528,6 +528,43 @@ jobs:
           $proc.Kill(); $proc.WaitForExit()
           Write-Host "Portable GUI smoke: OK"
 
+      # Diagnostics for the blank map on Windows runners (the deployment has
+      # every WebEngine file; the open question is slow start vs. no GPU).
+      # Never fails the job: two extra screenshots plus Chromium's log.
+      - name: Portable — map rendering diagnostics
+        if: always()
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $exe = (Get-ChildItem portable_test -Recurse -Filter "Stepan.exe")[0].FullName
+          Add-Type -AssemblyName System.Drawing
+          Add-Type -AssemblyName System.Windows.Forms
+          function Shot($name) {
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen(0, 0, 0, 0, $bmp.Size)
+            $bmp.Save($name); $g.Dispose(); $bmp.Dispose()
+            Write-Host "Screenshot saved: $name"
+          }
+          $runs = @(
+            @{ name = "default-20s"; flags = "--enable-logging=stderr --v=0" },
+            @{ name = "nogpu-20s";   flags = "--enable-logging=stderr --v=0 --disable-gpu --disable-gpu-compositing" }
+          )
+          foreach ($r in $runs) {
+            $env:QTWEBENGINE_CHROMIUM_FLAGS = $r.flags
+            $env:QT_LOGGING_RULES = "qt.webengine*=true"
+            $p = Start-Process -FilePath $exe -WindowStyle Normal -PassThru `
+              -RedirectStandardError "webengine-$($r.name).log" `
+              -RedirectStandardOutput "stdout-$($r.name).log"
+            Start-Sleep 20
+            Shot "screenshot-portable-$($r.name).png"
+            if (-not $p.HasExited) { $p.Kill(); $p.WaitForExit() }
+            Write-Host "---- webengine-$($r.name).log (tail) ----"
+            Get-Content "webengine-$($r.name).log" -Tail 40 -ErrorAction SilentlyContinue
+          }
+          Remove-Item Env:QTWEBENGINE_CHROMIUM_FLAGS, Env:QT_LOGGING_RULES -ErrorAction SilentlyContinue
+
       # ── Інсталятор ──────────────────────────────────────────────────────────
       - name: Installer — silent install
         shell: pwsh
@@ -585,7 +622,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshots-windows
-          path: screenshot-*.png
+          path: |
+            screenshot-*.png
+            webengine-*.log
+            stdout-*.log
           if-no-files-found: ignore
           retention-days: 7
 
