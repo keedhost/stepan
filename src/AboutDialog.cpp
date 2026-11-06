@@ -305,6 +305,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
 
     // ── Tabs ──────────────────────────────────────────────────────────────────
     auto* tabs = new QTabWidget(this);
+    tabs->setStyleSheet(Theme::tabWidgetQss());
 
     auto makeBrowser = [this]() {
         auto* b = new QTextBrowser(this);

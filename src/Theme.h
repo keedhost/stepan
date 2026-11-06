@@ -2,6 +2,7 @@
 #include <QApplication>
 #include <QPalette>
 #include <QString>
+#include <QStringList>
 
 // Central dark/light color source for widgets and dialogs that build their
 // own inline stylesheets or HTML content instead of relying on Qt's native
@@ -89,13 +90,40 @@ inline Colors colors() {
 // with setCheckable(true)). `selector` scopes the rules — pass an objectName
 // selector (e.g. "QPushButton#mapBtnFirst") or a bare type selector
 // ("QPushButton") if the group isn't otherwise objectName-scoped.
+// Appends a pseudo-state to every part of a comma-separated selector list:
+// "A,B" + ":checked" -> "A:checked,B:checked" (naive "%1:checked" would only
+// apply the state to the last part and style the rest unconditionally).
+inline QString withState(const QString& selector, const QString& state) {
+    QStringList parts = selector.split(',');
+    for (QString& p : parts) p = p.trimmed() + state;
+    return parts.join(',');
+}
+
 inline QString segmentedButtonQss(const QString& selector) {
     const Colors c = colors();
     return QString(
         "%1{ padding:5px 18px; font-size:12px; border:1px solid %2; background:%3; color:%4; }"
-        "%1:checked{ background:%5; color:%6; border-color:%5; }"
-        "%1:hover:!checked{ background:%7; }"
-    ).arg(selector, c.border, c.buttonBg, c.text, c.accent, c.accentText, c.hoverBg);
+        "%8{ background:%5; color:%6; border-color:%5; }"
+        "%9{ background:%7; color:%4; }"
+    ).arg(selector, c.border, c.buttonBg, c.text, c.accent, c.accentText, c.hoverBg,
+          withState(selector, ":checked"), withState(selector, ":hover:!checked"));
+}
+
+// Reusable QSS for a QTabWidget's tab bar. The native macOS tab style draws
+// the selected tab label in white regardless of the actual background, which
+// is unreadable on the light theme — so tabs get explicit theme colors.
+inline QString tabWidgetQss() {
+    const Colors c = colors();
+    return QString(
+        "QTabWidget::pane{ border:1px solid %1; border-radius:4px; top:-1px; }"
+        "QTabWidget::tab-bar{ alignment:center; }"
+        "QTabBar::tab{ padding:5px 16px; font-size:12px; color:%2; background:%3;"
+        "    border:1px solid %1; border-bottom:none; margin-right:-1px; }"
+        "QTabBar::tab:first{ border-top-left-radius:4px; }"
+        "QTabBar::tab:last{ border-top-right-radius:4px; margin-right:0; }"
+        "QTabBar::tab:selected{ background:%4; color:%2; border-bottom:2px solid %5; }"
+        "QTabBar::tab:hover:!selected{ background:%6; }"
+    ).arg(c.border, c.text, c.buttonBg, c.bg, c.accent, c.hoverBg);
 }
 
 // Reusable QSS for a filled accent "primary action" QPushButton.

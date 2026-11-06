@@ -29,6 +29,7 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     root->setSpacing(10);
 
     auto* tabs = new QTabWidget(this);
+    tabs->setStyleSheet(Theme::tabWidgetQss());
     root->addWidget(tabs);
 
     // ════════════════════════════════════════════════════════════════════════
