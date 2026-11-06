@@ -68,6 +68,7 @@
 #include <QTextCursor>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QPointer>
 #include <QNetworkRequest>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -1492,12 +1493,26 @@ void MainWindow::onCheckForUpdates() {
     req.setRawHeader("User-Agent", "Stepan-App");
     req.setRawHeader("Accept", "application/vnd.github+json");
 
+    // Disable the menu item while the request is in flight (prevents parallel
+    // checks and serves as the "busy" indicator).
+    QPointer<QAction> action = qobject_cast<QAction*>(sender());
+    if (action) action->setEnabled(false);
+
+    // No wait cursor on macOS: Qt has no native NSCursor for Qt::WaitCursor and
+    // builds it from a bundled image via QImage::toCGImage(), which crashes in
+    // CGImageCreate (invalid colorspace) on recent macOS — same failure as the
+    // window icon crash fixed earlier.
+#ifndef Q_OS_MACOS
     setCursor(Qt::WaitCursor);
+#endif
     QNetworkReply* reply = nam->get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam, action]() {
         reply->deleteLater();
         nam->deleteLater();
+#ifndef Q_OS_MACOS
         unsetCursor();
+#endif
+        if (action) action->setEnabled(true);
 
         if (reply->error() != QNetworkReply::NoError) {
             showAppWarning(this,
