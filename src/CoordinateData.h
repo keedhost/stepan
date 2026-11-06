@@ -44,6 +44,10 @@ struct CoordinateData {
 
     CoordinateFormat detectedFormat = CoordinateFormat::Unknown;
 
+    // Optional remark about how the input was read (e.g. an ambiguous X/Y
+    // order in USK-2000). Empty when there is nothing to say.
+    QString note;
+
     // MGRS precision and zone bounds (valid only when isZone() is true)
     int    mgrsPrecision = 5;            // 5=1m point, 4=10m, 3=100m, 2=1km, 1=10km, 0=100km
     double zoneSWLat = 0, zoneSWLon = 0; // south-west corner of MGRS square

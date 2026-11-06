@@ -21,6 +21,7 @@
  */
 
 #include "CoordinateParser.h"
+#include "AppLocale.h"
 #include <GeographicLib/MGRS.hpp>
 #include <GeographicLib/UTMUPS.hpp>
 #include <GeographicLib/DMS.hpp>
@@ -183,7 +184,17 @@ bool CoordinateParser::usk2000ToLatLon(double X, double Y, double& lat, double& 
 
     try {
         gkProjection().Reverse(lon0, easting, northing, lat, lon);
-        return (lat >= -90.0 && lat <= 90.0 && lon >= -180.0 && lon <= 180.0);
+        if (!(lat >= -90.0 && lat <= 90.0 && lon >= -180.0 && lon <= 180.0)) return false;
+
+        // USK-2000 is defined for Ukraine only (≈44.4–52.4°N, 22.1–40.2°E);
+        // accept that area with a margin. Without this, swapped X/Y almost
+        // always decode to some valid-looking point (e.g. "6342000 5592000"
+        // landed near Pskov instead of Kyiv) and the swap fallback never ran.
+        if (lat < 43.0 || lat > 53.5 || lon < 21.0 || lon > 41.5) return false;
+        // The point must lie in the zone named by Y's prefix (6° strip), with
+        // the usual ~1° overlap allowed at zone edges.
+        if (lon < lon0 - 4.0 || lon > lon0 + 4.0) return false;
+        return true;
     } catch (...) {
         return false;
     }
@@ -375,12 +386,36 @@ std::optional<CoordinateData> CoordinateParser::tryUSK2000(const QString& input)
     static const QRegularExpression reDashed(
         R"(^(\d{2})-(\d+)\s+(\d{2})-(\d+)$)"
     );
+    // Unlabeled input: first number is X (northing), second Y (easting with
+    // zone prefix). The swapped order is tried too; with the Ukraine-only
+    // domain check it is usually unambiguous. When both orders give a point
+    // in Ukraine (possible in zone 5), keep "first = X" and say so.
+    auto tryEitherOrder = [&](double first, double second) -> std::optional<CoordinateData> {
+        auto asXY = tryXY(first, second);
+        auto asYX = tryXY(second, first);
+        if (asXY && asYX
+            && (std::abs(asXY->lat - asYX->lat) > 1e-5 || std::abs(asXY->lon - asYX->lon) > 1e-5)) {
+            asXY->note = appTr(
+                "Порядок X/Y неоднозначний: перше число прочитано як X (північ). "
+                "Якщо це Y — поміняйте числа місцями.",
+                "Ambiguous X/Y order: the first number was read as X (northing). "
+                "If it is Y, swap the numbers.");
+            return asXY;
+        }
+        if (asXY) return asXY;
+        if (asYX) {
+            asYX->note = appTr("Перше число прочитано як Y (схід), друге як X (північ).",
+                               "The first number was read as Y (easting), the second as X (northing).");
+            return asYX;
+        }
+        return std::nullopt;
+    };
+
     auto mD = reDashed.match(s);
     if (mD.hasMatch()) {
-        const double X = (mD.captured(1) + mD.captured(2)).toLongLong();
-        const double Y = (mD.captured(3) + mD.captured(4)).toLongLong();
-        if (auto r = tryXY(X, Y)) return r;
-        if (auto r = tryXY(Y, X)) return r; // also try reversed
+        const double first  = (mD.captured(1) + mD.captured(2)).toLongLong();
+        const double second = (mD.captured(3) + mD.captured(4)).toLongLong();
+        if (auto r = tryEitherOrder(first, second)) return r;
     }
 
     // ── Labeled: X= ... Y= ...  or  X: ... Y: ... (any order) ────────────────
@@ -413,8 +448,7 @@ std::optional<CoordinateData> CoordinateParser::tryUSK2000(const QString& input)
     if (mU.hasMatch()) {
         const double a = extractDouble(mU.captured(1));
         const double b = extractDouble(mU.captured(2));
-        if (auto r = tryXY(a, b)) return r;  // first=X, second=Y
-        if (auto r = tryXY(b, a)) return r;  // first=Y, second=X (fallback)
+        if (auto r = tryEitherOrder(a, b)) return r;
     }
 
     return std::nullopt;

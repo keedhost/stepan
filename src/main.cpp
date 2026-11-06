@@ -156,6 +156,11 @@ static int runConsole(int argc, char* argv[]) {
         return 3;
     }
 
+    // A remark about how the input was read goes to stderr, so scripts that
+    // parse stdout (including --raw) are not affected.
+    if (!result->note.isEmpty())
+        err << result->note << "\n";
+
     // Coordinate output: skip when --url is the only output-related flag
     const bool showCoords = !hasUrl || hasFormat;
 

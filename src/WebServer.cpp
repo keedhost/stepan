@@ -292,5 +292,7 @@ QByteArray WebServer::serveConvert(const QString& queryString) {
     obj["usk2000"]  = result->usk2000;
     obj["lat"]      = result->lat;
     obj["lon"]      = result->lon;
+    if (!result->note.isEmpty())
+        obj["note"] = result->note;
     return QJsonDocument(obj).toJson(QJsonDocument::Compact);
 }

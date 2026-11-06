@@ -246,6 +246,7 @@ void MainWindow::setupUi() {
 
     // --- Format detection label ---
     m_formatLbl = new QLabel(appTr("Введіть координати вище", "Enter coordinates above"), central);
+    m_formatLbl->setWordWrap(true);
     m_formatLbl->setObjectName("formatLabel");
     m_formatLbl->setStyleSheet("font-style: italic; font-size: 12px;");
     root->addWidget(m_formatLbl);
@@ -458,6 +459,12 @@ void MainWindow::updateOutput(const std::optional<CoordinateData>& data) {
         m_formatLbl->setText(QString(appTr("MGRS — ділянка %1 × %2", "MGRS — area %1 × %2")).arg(sz).arg(sz));
     } else {
         m_formatLbl->setText(appTr("Система координат: ", "Coordinate system: ") + CoordinateParser::formatName(data->detectedFormat));
+    }
+    if (!data->note.isEmpty()) {
+        // A remark about how the input was read (e.g. ambiguous USK-2000 X/Y
+        // order): shown under the format name in the warning colour.
+        m_formatLbl->setStyleSheet(QString("color: %1; font-weight: bold; font-size: 12px;").arg(Theme::colors().warning));
+        m_formatLbl->setText(m_formatLbl->text() + "\n" + data->note);
     }
 
     // External buttons
