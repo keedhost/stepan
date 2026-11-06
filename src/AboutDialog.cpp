@@ -35,6 +35,15 @@
 #include <QFrame>
 #include <QPixmap>
 #include <QFont>
+#include <QGuiApplication>
+#include <QScreen>
+#include <QAbstractTextDocumentLayout>
+#include <QTextBlock>
+#include <QTextDocument>
+#include <QTextLayout>
+
+#include <algorithm>
+#include <cmath>
 
 static const char* kBuildDate = __DATE__;  // e.g. "Jun 18 2026"
 static const char* kBuildTime = __TIME__;  // e.g. "14:32:05"
@@ -139,80 +148,58 @@ static QString aboutHtml() {
 </body></html>)").arg(qtVer, build, appVer, appHash, bodyStyle, h3Style, mutedStyle);
 }
 
+// Paragraphs, not pre-wrapped lines: the text reflows to the dialog width,
+// which keeps the tab short enough to show without a scroll bar.
 static QString licenseHtml() {
-    if (appLangIsEnglish()) return R"(
-<html><body style="font-family: monospace; font-size: 12px; margin: 6px 2px; white-space: pre-wrap; line-height: 1.55;">
-<b>Stepan — Coordinate System Converter</b>
-Copyright &copy; 2026 Andrii Kondratiev
+    const QString head = QStringLiteral(
+        "<html><body style=\"font-size: 12px; margin: 6px 2px; line-height: 1.45;\">");
+    const QString p  = QStringLiteral("<p style=\"margin: 0 0 8px 0;\">");
+    const QString ul = QStringLiteral("<ul style=\"margin: 0 0 8px 0; -qt-list-indent: 1;\">");
+    const QString link = QStringLiteral(
+        "<a href=\"https://www.gnu.org/licenses/gpl-3.0.html\">https://www.gnu.org/licenses/gpl-3.0.html</a>");
 
-<b>GNU GENERAL PUBLIC LICENSE — Version 3</b>
+    if (appLangIsEnglish()) return head
+        + p + "<b>Stepan — Coordinate System Converter</b><br>Copyright &copy; 2026 Andrii Kondratiev</p>"
+        + p + "<b>GNU GENERAL PUBLIC LICENSE — Version 3</b></p>"
+        + p + "This program is free software: you can redistribute it and/or modify it under the terms "
+              "of the GNU General Public License as published by the Free Software Foundation, either "
+              "version 3 of the License, or (at your option) any later version.</p>"
+        + p + "This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; "
+              "without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. "
+              "See the GNU General Public License for more details.</p>"
+        + p + "You should have received a copy of the GNU General Public License along with this program. "
+              "If not, see " + link + "</p>"
+        + "<hr>"
+        + p + "<b>What this means for you:</b></p>"
+        + ul + "<li>You are free to run, study, share and modify this software.</li>"
+               "<li>If you distribute modified versions, you must release them under the same GPL-3.0 "
+               "license and provide the source code.</li>"
+               "<li>You may not impose additional restrictions on the rights granted by this license.</li>"
+               "<li>There is NO WARRANTY for this software.</li></ul>"
+        + p + "Full license text: <a href=\"https://www.gnu.org/licenses/gpl-3.0.html\">gnu.org/licenses/gpl-3.0.html</a></p>"
+        + "</body></html>";
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see
-<a href="https://www.gnu.org/licenses/gpl-3.0.html">https://www.gnu.org/licenses/gpl-3.0.html</a>
-
-──────────────────────────────────────────────────────
-
-<b>What this means for you:</b>
-
-• You are free to run, study, share and modify this software.
-• If you distribute modified versions, you must release them
-  under the same GPL-3.0 license and provide the source code.
-• You may not impose additional restrictions on the rights
-  granted by this license.
-• There is NO WARRANTY for this software.
-
-Full license text:
-<a href="https://www.gnu.org/licenses/gpl-3.0.html">gnu.org/licenses/gpl-3.0.html</a>
-</body></html>)";
-
-    return R"(
-<html><body style="font-family: monospace; font-size: 12px; margin: 6px 2px; white-space: pre-wrap; line-height: 1.55;">
-<b>Степан — Конвертер систем координат</b>
-Copyright &copy; 2026 Андрій Кондратьєв
-
-<b>GNU GENERAL PUBLIC LICENSE — Версія 3</b>
-
-Ця програма є вільним програмним забезпеченням: ви можете
-перерозповсюджувати її та/або змінювати відповідно до умов
-Стандартної громадської ліцензії GNU, опублікованої Free Software
-Foundation, версії 3 або (на ваш вибір) будь-якої пізнішої версії.
-
-Ця програма розповсюджується в надії, що вона буде корисною,
-але БЕЗ БУДЬ-ЯКИХ ГАРАНТІЙ; навіть без мається на увазі гарантії
-ПРИДАТНОСТІ ДЛЯ ПРОДАЖУ або ПРИДАТНОСТІ ДЛЯ КОНКРЕТНОЇ МЕТИ.
-Дивіться Стандартну громадську ліцензію GNU для отримання
-додаткової інформації.
-
-Ви повинні були отримати копію Стандартної громадської ліцензії GNU
-разом із цією програмою. Якщо ні, перегляньте:
-<a href="https://www.gnu.org/licenses/gpl-3.0.html">https://www.gnu.org/licenses/gpl-3.0.html</a>
-
-──────────────────────────────────────────────────────
-
-<b>Що це означає для вас:</b>
-
-• Ви можете вільно запускати, вивчати, поширювати та змінювати
-  цю програму.
-• Якщо ви поширюєте змінені версії — ви зобов'язані робити це
-  на умовах тієї ж GPL-3.0 і надавати вихідний код.
-• Ви не можете накладати додаткові обмеження на права,
-  надані цією ліцензією.
-• На цю програму НЕ НАДАЄТЬСЯ жодних гарантій.
-
-Повний текст ліцензії:
-<a href="https://www.gnu.org/licenses/gpl-3.0.html">gnu.org/licenses/gpl-3.0.html</a>
-</body></html>)";
+    return head
+        + p + QString::fromUtf8("<b>Степан — Конвертер систем координат</b><br>Copyright &copy; 2026 Андрій Кондратьєв</p>")
+        + p + QString::fromUtf8("<b>GNU GENERAL PUBLIC LICENSE — Версія 3</b></p>")
+        + p + QString::fromUtf8("Ця програма є вільним програмним забезпеченням: ви можете перерозповсюджувати її "
+              "та/або змінювати відповідно до умов Стандартної громадської ліцензії GNU, опублікованої "
+              "Free Software Foundation, версії 3 або (на ваш вибір) будь-якої пізнішої версії.</p>")
+        + p + QString::fromUtf8("Ця програма розповсюджується в надії, що вона буде корисною, але БЕЗ БУДЬ-ЯКИХ "
+              "ГАРАНТІЙ; навіть без мається на увазі гарантії ПРИДАТНОСТІ ДЛЯ ПРОДАЖУ або ПРИДАТНОСТІ "
+              "ДЛЯ КОНКРЕТНОЇ МЕТИ. Дивіться Стандартну громадську ліцензію GNU для отримання додаткової "
+              "інформації.</p>")
+        + p + QString::fromUtf8("Ви повинні були отримати копію Стандартної громадської ліцензії GNU разом із цією "
+              "програмою. Якщо ні, перегляньте: ") + link + "</p>"
+        + "<hr>"
+        + p + QString::fromUtf8("<b>Що це означає для вас:</b></p>")
+        + ul + QString::fromUtf8("<li>Ви можете вільно запускати, вивчати, поширювати та змінювати цю програму.</li>"
+               "<li>Якщо ви поширюєте змінені версії — ви зобов'язані робити це на умовах тієї ж GPL-3.0 "
+               "і надавати вихідний код.</li>"
+               "<li>Ви не можете накладати додаткові обмеження на права, надані цією ліцензією.</li>"
+               "<li>На цю програму НЕ НАДАЄТЬСЯ жодних гарантій.</li></ul>")
+        + p + QString::fromUtf8("Повний текст ліцензії: <a href=\"https://www.gnu.org/licenses/gpl-3.0.html\">gnu.org/licenses/gpl-3.0.html</a></p>")
+        + "</body></html>";
 }
 
 static QString supportHtml() {
@@ -268,8 +255,6 @@ static QString supportHtml() {
 
 AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
     setWindowTitle(appTr("Про програму", "About Stepan"));
-    setMinimumSize(520, 480);
-    resize(540, 520);
     setModal(true);
 
     auto* root = new QVBoxLayout(this);
@@ -349,6 +334,50 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
     supportBrowser->setHtml(supportHtml());
     tabs->addTab(supportBrowser, appTr("Допомогти фінансово", "Support the project"));
 
+    // Size the tab pages to their content, so no tab needs a scroll bar and
+    // no line of the (pre-wrapped) license text is cut. Measured on clones:
+    // a QTextBrowser lays its own document out lazily until it is shown, so
+    // measuring it here in the constructor gives far too small a width.
+    // Capped by the screen; past that the scroll bar is the honest fallback.
+    {
+        const QList<QTextBrowser*> browsers{aboutBrowser, licenseBrowser, supportBrowser};
+        const QRect avail = (screen() ? screen() : QGuiApplication::primaryScreen())->availableGeometry();
+        const int slack = 8;  // rounding plus the browser's viewport inset
+
+        QList<QTextDocument*> docs;
+        for (auto* b : browsers) docs << b->document()->clone(this);
+
+        // Width: the natural width of the About and Support pages (their
+        // tables must not wrap), at least a comfortable reading width. The
+        // license is plain paragraphs and simply reflows to that width.
+        qreal width = 560;
+        for (QTextDocument* doc : {docs[0], docs[2]}) {
+            doc->setTextWidth(100000);
+            width = std::max(width, doc->idealWidth());
+            for (QTextBlock blk = doc->begin(); blk.isValid(); blk = blk.next()) {
+                doc->documentLayout()->blockBoundingRect(blk);  // lays the block out
+                const QTextLayout* lay = blk.layout();
+                for (int i = 0; lay && i < lay->lineCount(); ++i) {
+                    const QTextLine line = lay->lineAt(i);
+                    width = std::max(width, lay->position().x() + line.x() + line.naturalTextWidth()
+                                            + doc->documentMargin());
+                }
+            }
+        }
+        const int pageW = std::min(int(std::ceil(width)) + slack, int(avail.width() * 0.8));
+
+        qreal height = 0;
+        for (QTextDocument* doc : docs) {
+            doc->setTextWidth(pageW - slack);
+            height = std::max(height, doc->size().height());
+        }
+        // Leave room for the header, tab bar and Close button (~260 px).
+        const int pageH = std::min(int(std::ceil(height)) + slack, avail.height() - 260);
+
+        for (auto* b : browsers) b->setMinimumSize(pageW, pageH);
+        qDeleteAll(docs);
+    }
+
     root->addWidget(tabs, 1);
     root->addSpacing(10);
 
@@ -357,4 +386,6 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
     btns->button(QDialogButtonBox::Close)->setText(appTr("Закрити", "Close"));
     connect(btns, &QDialogButtonBox::rejected, this, &QDialog::accept);
     root->addWidget(btns);
+
+    adjustSize();
 }

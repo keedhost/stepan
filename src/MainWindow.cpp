@@ -174,12 +174,16 @@ MainWindow::MainWindow(QWidget* parent)
 void MainWindow::setupUi() {
     // Menu bar
     auto* fileMenu = menuBar()->addMenu(appTr("Файл", "File"));
+    auto* settingsAction = fileMenu->addAction(appTr("Налаштування...", "Settings..."));
+    // NoRole: on macOS Qt guesses menu roles from the text and would move the
+    // English "Settings..." (and "About Stepan..." below) into the
+    // application menu; the Ukrainian text isn't recognised, so the menus
+    // would differ by language. Keep both where we put them.
+    settingsAction->setMenuRole(QAction::NoRole);
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::onShowSettings);
+    fileMenu->addSeparator();
     auto* checkUpdatesAction = fileMenu->addAction(appTr("Перевірити оновлення...", "Check for Updates..."));
     connect(checkUpdatesAction, &QAction::triggered, this, &MainWindow::onCheckForUpdates);
-
-    auto* settingsMenu = menuBar()->addMenu(appTr("Налаштування", "Settings"));
-    auto* settingsAction = settingsMenu->addAction(appTr("Налаштування...", "Settings..."));
-    connect(settingsAction, &QAction::triggered, this, &MainWindow::onShowSettings);
 
     auto* helpMenu = menuBar()->addMenu(appTr("Довідка", "Help"));
     auto* cliAction = helpMenu->addAction(appTr("Консольні команди...", "Command Line..."));
@@ -201,6 +205,7 @@ void MainWindow::setupUi() {
     });
     helpMenu->addSeparator();
     auto* aboutAction = helpMenu->addAction(appTr("Про програму...", "About Stepan..."));
+    aboutAction->setMenuRole(QAction::NoRole);
     connect(aboutAction, &QAction::triggered, this, &MainWindow::onShowAbout);
 
     auto* central = new QWidget(this);
@@ -898,7 +903,7 @@ void MainWindow::onShowWebHelp() {
 <p>Вбудований веб-сервер дозволяє конвертувати координати з будь-якого пристрою в мережі через браузер.</p>
 
 <h3>Увімкнення</h3>
-<p>Відкрийте <b>Налаштування → Веб-інтерфейс</b>, поставте прапорець
+<p>Відкрийте <b>Файл → Налаштування → Веб-інтерфейс</b>, поставте прапорець
 <i>Увімкнути вбудований веб-сервер</i>, оберіть мережевий інтерфейс і порт.
 URL для доступу відображається там же та в нижньому банері головного вікна після запуску.</p>
 <table>
@@ -962,7 +967,7 @@ $ curl "http://localhost:8080/api/convert?q=invalid"
 <p>The built-in web server allows converting coordinates from any device on the network through a browser.</p>
 
 <h3>Enabling</h3>
-<p>Open <b>Settings → Web Interface</b>, check <i>Enable built-in web server</i>, choose the network interface and port.
+<p>Open <b>File → Settings → Web Interface</b>, check <i>Enable built-in web server</i>, choose the network interface and port.
 The access URL is shown there and in the banner at the bottom of the main window after startup.</p>
 <table>
   <tr><td>All networks (0.0.0.0)</td>
