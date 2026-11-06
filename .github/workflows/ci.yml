@@ -547,12 +547,19 @@ jobs:
             $bmp.Save($name); $g.Dispose(); $bmp.Dispose()
             Write-Host "Screenshot saved: $name"
           }
+          # Result of the first diagnostic run: the renderer dies with
+          # ProcessGone 3 (0xC0000005) with and without GPU. The runner is
+          # Windows Server 2025 (build 26100, same base as Windows 11 24H2),
+          # so the next question is whether Chromium's sandbox is the cause.
           $runs = @(
-            @{ name = "default-20s"; flags = "--enable-logging=stderr --v=0" },
-            @{ name = "nogpu-20s";   flags = "--enable-logging=stderr --v=0 --disable-gpu --disable-gpu-compositing" }
+            @{ name = "default-20s";         flags = "--enable-logging=stderr --v=0"; nosandbox = $false },
+            @{ name = "nogpu-20s";           flags = "--enable-logging=stderr --v=0 --disable-gpu --disable-gpu-compositing"; nosandbox = $false },
+            @{ name = "nosandbox-20s";       flags = "--enable-logging=stderr --v=0"; nosandbox = $true },
+            @{ name = "nosandbox-nogpu-20s"; flags = "--enable-logging=stderr --v=0 --disable-gpu --disable-gpu-compositing"; nosandbox = $true }
           )
           foreach ($r in $runs) {
             $env:QTWEBENGINE_CHROMIUM_FLAGS = $r.flags
+            if ($r.nosandbox) { $env:QTWEBENGINE_DISABLE_SANDBOX = "1" } else { Remove-Item Env:QTWEBENGINE_DISABLE_SANDBOX -ErrorAction SilentlyContinue }
             $env:QT_LOGGING_RULES = "qt.webengine*=true"
             $p = Start-Process -FilePath $exe -WindowStyle Normal -PassThru `
               -RedirectStandardError "webengine-$($r.name).log" `
@@ -563,7 +570,7 @@ jobs:
             Write-Host "---- webengine-$($r.name).log (tail) ----"
             Get-Content "webengine-$($r.name).log" -Tail 40 -ErrorAction SilentlyContinue
           }
-          Remove-Item Env:QTWEBENGINE_CHROMIUM_FLAGS, Env:QT_LOGGING_RULES -ErrorAction SilentlyContinue
+          Remove-Item Env:QTWEBENGINE_CHROMIUM_FLAGS, Env:QT_LOGGING_RULES, Env:QTWEBENGINE_DISABLE_SANDBOX -ErrorAction SilentlyContinue
 
       # ── Інсталятор ──────────────────────────────────────────────────────────
       - name: Installer — silent install
