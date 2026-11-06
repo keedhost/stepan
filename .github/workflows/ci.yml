@@ -532,50 +532,6 @@ jobs:
           $proc.Kill(); $proc.WaitForExit()
           Write-Host "Portable GUI smoke: OK"
 
-      # Diagnostics for the blank map on Windows runners (the deployment has
-      # every WebEngine file; the open question is slow start vs. no GPU).
-      # Never fails the job: two extra screenshots plus Chromium's log.
-      - name: Portable — map rendering diagnostics
-        if: always()
-        shell: pwsh
-        continue-on-error: true
-        run: |
-          $exe = (Get-ChildItem portable_test -Recurse -Filter "Stepan.exe")[0].FullName
-          Add-Type -AssemblyName System.Drawing
-          Add-Type -AssemblyName System.Windows.Forms
-          function Shot($name) {
-            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
-            $g = [System.Drawing.Graphics]::FromImage($bmp)
-            $g.CopyFromScreen(0, 0, 0, 0, $bmp.Size)
-            $bmp.Save($name); $g.Dispose(); $bmp.Dispose()
-            Write-Host "Screenshot saved: $name"
-          }
-          # Result of the first diagnostic run: the renderer dies with
-          # ProcessGone 3 (0xC0000005) with and without GPU. The runner is
-          # Windows Server 2025 (build 26100, same base as Windows 11 24H2),
-          # so the next question is whether Chromium's sandbox is the cause.
-          $runs = @(
-            @{ name = "default-20s";         flags = "--enable-logging=stderr --v=0"; nosandbox = $false },
-            @{ name = "nogpu-20s";           flags = "--enable-logging=stderr --v=0 --disable-gpu --disable-gpu-compositing"; nosandbox = $false },
-            @{ name = "nosandbox-20s";       flags = "--enable-logging=stderr --v=0"; nosandbox = $true },
-            @{ name = "nosandbox-nogpu-20s"; flags = "--enable-logging=stderr --v=0 --disable-gpu --disable-gpu-compositing"; nosandbox = $true }
-          )
-          foreach ($r in $runs) {
-            $env:QTWEBENGINE_CHROMIUM_FLAGS = $r.flags
-            if ($r.nosandbox) { $env:QTWEBENGINE_DISABLE_SANDBOX = "1" } else { Remove-Item Env:QTWEBENGINE_DISABLE_SANDBOX -ErrorAction SilentlyContinue }
-            $env:QT_LOGGING_RULES = "qt.webengine*=true"
-            $p = Start-Process -FilePath $exe -WindowStyle Normal -PassThru `
-              -RedirectStandardError "webengine-$($r.name).log" `
-              -RedirectStandardOutput "stdout-$($r.name).log"
-            Start-Sleep 20
-            Shot "screenshot-portable-$($r.name).png"
-            if (-not $p.HasExited) { $p.Kill(); $p.WaitForExit() }
-            Write-Host "---- webengine-$($r.name).log (tail) ----"
-            Get-Content "webengine-$($r.name).log" -Tail 40 -ErrorAction SilentlyContinue
-          }
-          Remove-Item Env:QTWEBENGINE_CHROMIUM_FLAGS, Env:QT_LOGGING_RULES, Env:QTWEBENGINE_DISABLE_SANDBOX -ErrorAction SilentlyContinue
-
       # ── Інсталятор ──────────────────────────────────────────────────────────
       - name: Installer — silent install
         shell: pwsh
@@ -633,10 +589,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshots-windows
-          path: |
-            screenshot-*.png
-            webengine-*.log
-            stdout-*.log
+          path: screenshot-*.png
           if-no-files-found: ignore
           retention-days: 7
 
@@ -667,13 +620,16 @@ jobs:
         run: |
           /Volumes/Stepan/Stepan.app/Contents/MacOS/Stepan &
           SMOKE_PID=$!
-          sleep 5
+          # 15 s, not 5: on the runner VM WebEngine (Qt 6.8) needs longer to
+          # paint the map, and a 5 s screenshot showed an empty white map
+          # although the same DMG renders it fine on a real Mac.
+          sleep 15
           screencapture -x /tmp/screenshot-macos.png 2>/dev/null || true
           if kill -0 $SMOKE_PID 2>/dev/null; then
             kill $SMOKE_PID; wait $SMOKE_PID 2>/dev/null || true
             echo "macOS GUI smoke: OK"
           else
-            echo "macOS GUI smoke: FAILED (app exited within 5 s)"; exit 1
+            echo "macOS GUI smoke: FAILED (app exited within 15 s)"; exit 1
           fi
 
       - name: Upload macOS screenshot
