@@ -207,7 +207,11 @@ inline QString tabWidgetQss() {
     return QString(
         "QTabWidget::pane{ border:1px solid %1; border-radius:4px; top:-1px; }"
         "QTabWidget::tab-bar{ alignment:center; }"
-        "QTabBar::tab{ padding:5px 16px; font-size:12px; color:%2; background:%3;"
+        // font-size goes on QTabBar itself, not on ::tab: QTabBar measures tab
+        // widths with its own font, so a font set only on ::tab is drawn
+        // larger than it was measured and the labels get elided ("Загал...").
+        "QTabBar{ font-size:12px; }"
+        "QTabBar::tab{ padding:5px 16px; color:%2; background:%3;"
         "    border:1px solid %1; border-bottom:none; margin-right:-1px; }"
         "QTabBar::tab:first{ border-top-left-radius:4px; }"
         "QTabBar::tab:last{ border-top-right-radius:4px; margin-right:0; }"
