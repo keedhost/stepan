@@ -25,668 +25,240 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Степан — Конвертер систем координат</title>
+<title>Степан: конвертер систем координат</title>
 <meta name="description" content="Кросплатформений десктопний застосунок для швидкого перетворення між MGRS, DD, DMS, UTM та УСК-2000">
-<meta property="og:title" content="Степан — Конвертер систем координат">
-<meta property="og:description" content="Для топографів, геодезистів, операторів БПЛА та військових. macOS · Windows · Linux">
+<meta property="og:title" content="Степан: конвертер систем координат">
+<meta property="og:description" content="Для топографів, геодезистів, операторів БПЛА та військових. macOS, Windows, Linux">
 <meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-<style id="hljs-overrides">
-pre code.hljs { background: transparent; padding: 0; font-size: inherit; }
-.hljs { background: transparent; }
-</style>
-<style>
-:root {
-  --bg:     #f8f3e8;
-  --bg2:    #ede8da;
-  --bg3:    #e4ddd0;
-  --rule:   #1a1a1a;
-  --rule2:  #7a7a7a;
-  --text:   #111111;
-  --muted:  #555555;
-  --amber:  #111111;
-  --coord:  #222222;
-  --border: #1a1a1a;
-  --dim:    #bdb5a5;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background-color: var(--bg);
-  color: var(--text);
-  line-height: 1.65;
-  overflow-x: hidden;
-}
-
-/* ── Nav ── */
-nav {
-  position: sticky; top: 0; z-index: 100;
-  background: var(--bg);
-  border-bottom: 3px solid var(--rule);
-  padding: 0 2rem;
-  display: flex; align-items: center; justify-content: space-between;
-  height: 56px;
-}
-.nav-brand {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.25rem; font-weight: 700;
-  color: var(--text); text-decoration: none;
-  letter-spacing: .02em;
-}
-.nav-links { display: flex; gap: 1.5rem; list-style: none; }
-.nav-links a {
-  color: var(--muted); text-decoration: none; font-size: .77rem;
-  text-transform: uppercase; letter-spacing: .08em;
-  transition: color .12s;
-  padding-bottom: 2px;
-  border-bottom: 2px solid transparent;
-}
-.nav-links a:hover { color: var(--text); border-bottom-color: var(--text); }
-@media (max-width: 680px) { .nav-links { display: none; } }
-
-/* ── Layout ── */
-.container { max-width: 1080px; margin: 0 auto; padding: 0 1.5rem; }
-.section-wrap { padding: 5rem 0; border-top: 3px solid var(--rule); }
-.section-wrap:first-of-type { border-top: none; }
-
-.section-num {
-  display: block;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: .68rem; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--text); font-weight: 700;
-  border-left: 4px solid var(--rule); padding-left: .75rem;
-  margin-bottom: .9rem;
-}
-
-h2 {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700;
-  margin-bottom: .6rem; color: var(--text);
-}
-
-.section-desc {
-  color: var(--muted); max-width: 580px;
-  margin-bottom: 2.5rem; font-size: .9rem; line-height: 1.75;
-}
-.section-desc a { color: var(--text); text-decoration: underline; }
-.section-desc a:hover { text-decoration: none; }
-
-/* ── Hero ── */
-.hero {
-  border-bottom: 3px solid var(--rule);
-  padding: 5rem 0 4.5rem;
-}
-.hero-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
-  align-items: center;
-}
-@media (max-width: 780px) {
-  .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; }
-}
-.hero-label {
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: .68rem; letter-spacing: .15em; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 1.1rem;
-  border-left: 4px solid var(--rule); padding-left: .75rem;
-}
-.hero h1 {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(3rem, 7vw, 4.5rem); font-weight: 700;
-  margin-bottom: .5rem; line-height: 1.05;
-  color: var(--text);
-}
-.hero-tagline {
-  font-size: .97rem; color: var(--muted);
-  margin-bottom: 2.25rem; line-height: 1.75; max-width: 380px;
-}
-.hero-btns { display: flex; gap: .6rem; flex-wrap: wrap; }
-
-.coord-block {
-  border: 2px solid var(--rule);
-  background: var(--bg);
-}
-.coord-block-label {
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: .65rem; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--bg); padding: .55rem 1rem;
-  border-bottom: 2px solid var(--rule);
-  background: var(--rule);
-  font-weight: 700;
-}
-.coord-table {
-  width: 100%; border-collapse: collapse;
-  font-family: 'Consolas', 'Courier New', monospace; font-size: .86rem;
-}
-.coord-table tr { border-bottom: 1px solid var(--rule2); }
-.coord-table tr:last-child { border-bottom: none; }
-.coord-table td { padding: .6rem 1rem; vertical-align: middle; }
-.coord-fmt { color: var(--muted); font-size: .72rem; letter-spacing: .06em; white-space: nowrap; width: 34%; font-weight: 700; text-transform: uppercase; }
-.coord-val { color: var(--coord); font-weight: 600; }
-
-/* ── Buttons ── */
-.btn {
-  display: inline-flex; align-items: center;
-  padding: .65rem 1.35rem; border-radius: 0;
-  font-size: .84rem; font-weight: 700;
-  text-decoration: none; transition: all .12s;
-  border: 2px solid var(--rule); cursor: pointer;
-  font-family: inherit; letter-spacing: .05em;
-  text-transform: uppercase;
-}
-.btn-primary { background: var(--rule); color: var(--bg); border-color: var(--rule); }
-.btn-primary:hover { background: #333; border-color: #333; }
-.btn-secondary { background: transparent; color: var(--text); border-color: var(--rule); }
-.btn-secondary:hover { background: var(--rule); color: var(--bg); }
-
-/* ── Features ── */
-.features-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2px;
-  background: var(--rule);
-  border: 2px solid var(--rule);
-}
-@media (max-width: 640px) { .features-list { grid-template-columns: 1fr; } }
-.fitem {
-  display: flex; gap: 1.25rem;
-  padding: 1.5rem;
-  background: var(--bg);
-  transition: background .12s;
-}
-.fitem:hover { background: var(--bg2); }
-.fnum {
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 1.5rem; font-weight: 700;
-  color: var(--dim); flex-shrink: 0;
-  line-height: 1.1; padding-top: .05rem;
-  min-width: 2.4rem; transition: color .12s;
-}
-.fitem:hover .fnum { color: var(--rule); }
-.fitem h3 { font-size: .93rem; font-weight: 700; margin-bottom: .35rem; }
-.fitem p { color: var(--muted); font-size: .84rem; line-height: 1.65; }
-.fitem p code { font-size: .8rem; }
-
-/* ── Platforms ── */
-.platforms-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 2px; background: var(--rule); border: 2px solid var(--rule);
-}
-@media (max-width: 680px) { .platforms-grid { grid-template-columns: 1fr; } }
-.pcard {
-  background: var(--bg2);
-  padding: 2rem 1.5rem;
-}
-.pcard-sys {
-  display: inline-block;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: .65rem; letter-spacing: .18em; text-transform: uppercase;
-  color: var(--text); font-weight: 700; margin-bottom: .8rem;
-  border-left: 3px solid var(--rule); padding-left: .5rem;
-}
-.pcard h3 {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.15rem; margin-bottom: .5rem;
-}
-.pcard p { color: var(--muted); font-size: .875rem; margin-bottom: 1rem; }
-.badges { display: flex; flex-wrap: wrap; gap: .4rem; }
-.badge {
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: .68rem; padding: .2rem .55rem;
-  background: var(--bg3); border: 1px solid var(--rule); color: var(--muted);
-  letter-spacing: .04em;
-}
-a.badge {
-  text-decoration: none; cursor: pointer;
-  transition: background .12s, color .12s;
-}
-a.badge:hover { background: var(--rule); color: var(--bg); }
-
-/* ── Tabs ── */
-.tabs { display: flex; border-bottom: 2px solid var(--rule); margin-bottom: 1.5rem; overflow-x: auto; }
-.tab-btn {
-  padding: .65rem 1.1rem; background: none; border: none;
-  border-bottom: 3px solid transparent; margin-bottom: -2px;
-  color: var(--muted); cursor: pointer; font-size: .76rem;
-  transition: all .12s; white-space: nowrap;
-  font-family: 'Consolas', 'Courier New', monospace;
-  letter-spacing: .08em; text-transform: uppercase;
-}
-.tab-btn.active { color: var(--text); border-bottom-color: var(--text); font-weight: 700; }
-.tab-btn:hover:not(.active) { color: var(--text); }
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
-.step-title { font-weight: 700; margin-bottom: .5rem; margin-top: 1.5rem; font-size: .9rem; }
-.step-title:first-child { margin-top: 0; }
-
-/* ── Code ── */
-pre {
-  background: var(--bg3); border: 1px solid var(--rule2);
-  border-left: 4px solid var(--rule);
-  padding: 1rem 1.25rem;
-  overflow-x: auto; font-family: 'Consolas', 'Courier New', monospace;
-  font-size: .83rem; line-height: 1.7; margin: .6rem 0;
-}
-code {
-  font-family: 'Consolas', 'Courier New', monospace;
-  background: var(--bg3); border: 1px solid var(--rule2);
-  padding: .1em .4em; font-size: .875em;
-}
-.cm { color: #886655; font-style: italic; }
-.note {
-  padding: .8rem 1rem .8rem 1.1rem; margin: 1rem 0;
-  font-size: .875rem; border-left: 4px solid;
-}
-.note-info { background: #eef5ee; border-color: #2a5a2a; color: #1a3a1a; }
-.note-warn { background: #f7f2e2; border-color: #8a5a10; color: #4a3008; }
-
-/* ── Tech stack ── */
-.stack-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 2px; background: var(--rule); border: 2px solid var(--rule);
-}
-.sitem {
-  background: var(--bg2);
-  padding: 1.25rem 1.5rem;
-}
-.sitem h4 { font-size: .93rem; font-weight: 700; margin-bottom: .25rem; color: var(--text); }
-.sitem p { font-size: .8rem; color: var(--muted); line-height: 1.6; }
-
-/* ── Commits ── */
-.commits-list { display: flex; flex-direction: column; }
-.citem {
-  display: flex; align-items: flex-start; gap: 1rem;
-  padding: .9rem 0; border-bottom: 1px solid var(--rule2);
-}
-.citem:last-child { border-bottom: none; }
-.chash {
-  font-family: 'Consolas', 'Courier New', monospace; font-size: .8rem;
-  color: var(--text); text-decoration: none; flex-shrink: 0;
-  padding: .2rem .5rem;
-  background: var(--bg3); border: 1px solid var(--rule);
-}
-.chash:hover { background: var(--rule); color: var(--bg); }
-.cinfo { flex: 1; min-width: 0; }
-.cmsg { font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cmeta {
-  font-size: .76rem; color: var(--muted); margin-top: .2rem;
-  font-family: 'Consolas', 'Courier New', monospace;
-}
-.commits-state { color: var(--muted); padding: 1.5rem 0; font-size: .9rem; }
-
-/* ── FAQ ── */
-.faq-list { display: flex; flex-direction: column; border-top: 2px solid var(--rule); }
-.faq-item { border-bottom: 1px solid var(--rule2); }
-.faq-q {
-  width: 100%; background: none; border: none; text-align: left;
-  padding: 1.1rem 0; display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem; color: var(--text); font-size: .9rem; cursor: pointer; font-weight: 600;
-  font-family: inherit; transition: color .12s;
-}
-.faq-q:hover { color: var(--muted); }
-.faq-chevron { flex-shrink: 0; color: var(--rule2); transition: transform .2s; }
-.faq-item.open .faq-chevron { transform: rotate(180deg); }
-.faq-a { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
-.faq-item.open .faq-a { max-height: 500px; }
-.faq-a-inner { padding-bottom: 1.1rem; color: var(--muted); font-size: .875rem; line-height: 1.75; }
-.faq-a-inner strong { color: var(--text); }
-
-/* ── Screenshots ── */
-.screenshots-grid { display: flex; flex-direction: column; gap: 2px; }
-.screenshots-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
-.screenshot-frame {
-  background: transparent;
-  overflow: hidden;
-}
-.screenshot-frame img { display: block; width: 100%; height: auto; }
-.screenshot-caption { font-size: .8rem; color: var(--muted); margin-top: .6rem; }
-@media (max-width: 640px) { .screenshots-row { grid-template-columns: 1fr; } }
-
-/* ── Automation ── */
-.auto-desc { color: var(--muted); font-size: .875rem; margin-bottom: .85rem; line-height: 1.7; }
-.api-label {
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: .65rem; text-transform: uppercase; letter-spacing: .14em;
-  color: var(--muted); margin-top: 1.25rem; margin-bottom: .4rem;
-  border-left: 4px solid var(--rule); padding-left: .5rem; font-weight: 700;
-}
-
-/* ── Footer ── */
-footer {
-  border-top: 3px solid var(--rule);
-  padding: 3rem 0;
-}
-.footer-inner {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  flex-wrap: wrap; gap: 1.5rem;
-}
-.footer-left { font-size: .875rem; color: var(--muted); }
-.footer-left strong { color: var(--text); font-family: Georgia, serif; }
-.footer-links { display: flex; gap: 1.25rem; flex-wrap: wrap; }
-footer a { color: var(--muted); text-decoration: none; font-size: .82rem; transition: color .12s; }
-footer a:hover { color: var(--text); text-decoration: underline; }
-.footer-copy { font-size: .75rem; color: var(--rule2); margin-top: .4rem; }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<a class="skip" href="#main">Перейти до змісту</a>
 
-<!-- ── Navigation ── -->
-<nav>
-  <a class="nav-brand" href="#">Степан</a>
-  <ul class="nav-links">
-    <li><a href="#features">Можливості</a></li>
-    <li><a href="#screenshots">Скріншоти</a></li>
-    <li><a href="#bulk-markers">Позначки</a></li>
-    <li><a href="#platforms">Платформи</a></li>
-    <li><a href="#install">Встановлення</a></li>
-    <li><a href="#automation">Скрипти</a></li>
-    <li><a href="#build">Збірка</a></li>
-    <li><a href="#stack">Стек</a></li>
-    <li><a href="#changelog">Зміни</a></li>
-    <li><a href="#faq">FAQ</a></li>
-    <li><a href="https://github.com/keedhost/stepan" target="_blank">GitHub ↗</a></li>
-  </ul>
-</nav>
-
-<!-- ── Hero ── -->
-<header class="hero">
+<header class="banner">
   <div class="container">
-    <div class="hero-grid">
-      <div class="hero-left">
-        <div class="hero-label">v0.2 beta &nbsp;·&nbsp; Open Source &nbsp;·&nbsp; GPL-3.0</div>
-        <h1>Степан</h1>
-        <p class="hero-tagline">Десктопний конвертер систем координат для тих, хто щодня працює з картою. macOS · Windows · Linux.</p>
-        <div class="hero-btns">
-          <a class="btn btn-primary" href="https://github.com/keedhost/stepan/releases/latest">Завантажити</a>
-          <a class="btn btn-secondary" href="https://github.com/keedhost/stepan" target="_blank">GitHub</a>
-          <a class="btn btn-secondary" href="#install">Встановлення</a>
-        </div>
-      </div>
-      <div class="coord-block">
-        <div class="coord-block-label">Приклад конвертації / 37UDB1234567890</div>
-        <table class="coord-table">
-          <tr><td class="coord-fmt">MGRS</td><td class="coord-val">37U DB 12345 67890</td></tr>
-          <tr><td class="coord-fmt">DD</td><td class="coord-val">50.450100, 30.523400</td></tr>
-          <tr><td class="coord-fmt">DMS</td><td class="coord-val">50°27'03"N 30°31'24"E</td></tr>
-          <tr><td class="coord-fmt">UTM</td><td class="coord-val">37U 312345 5590123</td></tr>
-          <tr><td class="coord-fmt">УСК-2000</td><td class="coord-val">4123456.78 — 2345678.90</td></tr>
-        </table>
-      </div>
-    </div>
+    <a class="wordmark" href="#" aria-label="Степан, на початок сторінки">Степан</a>
+    <a class="banner__link" href="https://github.com/keedhost/stepan" target="_blank">GitHub</a>
   </div>
 </header>
 
-<!-- ── Screenshots ── -->
-<div class="section-wrap" id="screenshots">
-<div class="container">
-  <span class="section-num">01 — Інтерфейс</span>
-  <h2>Подивіться самі</h2>
-  <p class="section-desc">Мінімалістичний інтерфейс, що не заважає роботі — і повноцінний CLI для тих, хто любить термінал.</p>
-  <div class="screenshots-grid">
-    <div>
-      <div class="screenshot-frame">
-        <img src="img/MainWindow.png" alt="Головне вікно Степан" loading="lazy">
-      </div>
-      <p class="screenshot-caption">Головне вікно — введіть координату в будь-якому форматі, отримайте всі варіанти та точку на карті миттєво</p>
-    </div>
-    <div class="screenshots-row">
-      <div>
-        <div class="screenshot-frame">
-          <img src="img/Terminal.png" alt="CLI — робота в терміналі" loading="lazy">
+<nav class="bar" aria-label="Розділи сторінки">
+  <div class="container">
+    <ul class="nav-links">
+      <li><a href="#features">Можливості</a></li>
+      <li><a href="#screenshots">Скріншоти</a></li>
+      <li><a href="#bulk-markers">Позначки</a></li>
+      <li><a href="#platforms">Платформи</a></li>
+      <li><a href="#install">Встановлення</a></li>
+      <li><a href="#automation">Скрипти</a></li>
+      <li><a href="#build">Збірка</a></li>
+      <li><a href="#stack">Стек</a></li>
+      <li><a href="#changelog">Зміни</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+
+<!-- Hero -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="container">
+    <div class="hero__top">
+      <div class="hero__text">
+        <h1 id="hero-title">Степан</h1>
+        <p class="lead">Десктопний конвертер систем координат для тих, хто щодня працює з картою.</p>
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="https://github.com/keedhost/stepan/releases/latest">Завантажити</a>
+          <a class="btn" href="https://github.com/keedhost/stepan" target="_blank">GitHub</a>
         </div>
-        <p class="screenshot-caption">CLI-режим — пакетна конвертація, інтеграція зі скриптами та автоматизація</p>
+        <p class="hero__meta">macOS, Windows та Linux. <a href="#install">Встановлення</a></p>
       </div>
-      <div>
-        <div class="screenshot-frame">
-          <img src="img/Tray.png" alt="Системний трей" loading="lazy">
+      <div class="plate">
+        <table>
+          <caption>Приклад конвертації: 37UDB1234567890</caption>
+          <tr><th scope="row">MGRS</th><td><code>37U DB 12345 67890</code></td></tr>
+          <tr><th scope="row">DD</th><td><code>50.450100, 30.523400</code></td></tr>
+          <tr><th scope="row">DMS</th><td><code>50°27'03"N 30°31'24"E</code></td></tr>
+          <tr><th scope="row">UTM</th><td><code>37U 312345 5590123</code></td></tr>
+          <tr><th scope="row">УСК-2000</th><td><code>4123456.78 — 2345678.90</code></td></tr>
+        </table>
+      </div>
+    </div>
+    <figure class="shot hero__shot">
+      <div class="shot__frame" data-slot="hero" data-kind="product" data-alt="Головне вікно Степана і діалог «Про програму»">
+        <img src="img/main-window-full.jpg" width="2400" height="1496" alt="Головне вікно Степан" fetchpriority="high">
+      </div>
+      <figcaption>Головне вікно: введіть координату в будь-якому форматі, отримайте всі варіанти та точку на карті миттєво</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="section-wrap section-wrap--l" id="features">
+  <div class="container">
+    <div class="head">
+      <h2>Все, що потрібно для роботи з координатами</h2>
+      <p class="lead">Степан автоматично розпізнає формат і миттєво конвертує у всі підтримувані системи, без зайвих кроків.</p>
+    </div>
+    <div class="bento" id="screenshots">
+      <article class="tile tile--a">
+        <figure class="tile__media tile__media--dark" data-kind="product">
+          <img src="img/terminal.jpg" width="1640" height="370" alt="CLI: робота в терміналі" loading="lazy">
+        </figure>
+        <div class="tile__body">
+          <h3>Командний рядок (CLI)</h3>
+          <p>Повноцінний CLI для скриптів та автоматизації. Підтримується фільтр за форматом, raw-виведення і генерація посилань на карту.</p>
+          <p class="tile__cap"><small>CLI-режим: пакетна конвертація, інтеграція зі скриптами та автоматизація</small></p>
         </div>
-        <p class="screenshot-caption">Трей — Степан завжди поруч і не займає місця на панелі задач</p>
+      </article>
+      <article class="tile tile--b tile--ink">
+        <div class="tile__body">
+          <h3>Автовизначення формату</h3>
+          <p>Вставте координату в будь-якому форматі і отримайте всі варіанти одразу.</p>
+          <ul class="formats" aria-label="Підтримувані формати">
+            <li>MGRS</li><li>DD</li><li>DMS</li><li>UTM</li><li>УСК-2000</li>
+          </ul>
+        </div>
+      </article>
+      <article class="tile tile--c">
+        <figure class="tile__media" data-kind="product">
+          <img src="img/map-zone.jpg" width="800" height="800" alt="Карта Степана з квадратом MGRS 1 км на топографічному шарі" loading="lazy">
+        </figure>
+        <div class="tile__body">
+          <h3>Вбудована карта</h3>
+          <p>Три шари: OpenStreetMap (вулиці), супутник Esri з підписами і OpenTopoMap (топографія). Точка конвертації відображається миттєво.</p>
+        </div>
+      </article>
+      <article class="tile tile--d">
+        <figure class="tile__media" data-kind="product">
+          <img src="img/tray.jpg" width="1255" height="505" alt="Системний трей" loading="lazy">
+        </figure>
+        <div class="tile__body">
+          <h3>Системний трей</h3>
+          <p>Мінімізується в трей, не займає місце на панелі задач. Координати можна вводити прямо з іконки трею.</p>
+          <p class="tile__cap"><small>Трей: Степан завжди поруч і не займає місця на панелі задач</small></p>
+        </div>
+      </article>
+      <article class="tile tile--q">
+        <div class="tile__body">
+          <h3>Вбудований HTTP API</h3>
+          <p><code>GET /api/convert?q=37UDB...</code> повертає JSON з усіма форматами. Інтеграція з будь-яким інструментом.</p>
+        </div>
+      </article>
+      <article class="tile tile--q">
+        <div class="tile__body">
+          <h3>Копіювання одним кліком</h3>
+          <p>Поряд з кожним форматом є кнопка копіювання. Швидко і без зайвих рухів.</p>
+        </div>
+      </article>
+      <article class="tile tile--q">
+        <div class="tile__body">
+          <h3>Відкрити на карті</h3>
+          <p>Швидкий перехід до Google Maps, OpenStreetMap або Bing Maps за одним кліком без ручного введення.</p>
+        </div>
+      </article>
+      <article class="tile tile--q">
+        <div class="tile__body">
+          <h3>Мультимовний інтерфейс</h3>
+          <p>Інтерфейс доступний українською та англійською мовами з миттєвим перемиканням у налаштуваннях.</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- Elevation and dark theme -->
+<section class="section-wrap" id="new">
+  <div class="container">
+    <div class="head">
+      <h2>Рельєф і темна тема</h2>
+      <p class="lead">Шар висот накладає теплову карту рельєфу на будь-яку підкладку, а тему можна обрати вручну.</p>
+    </div>
+    <div class="duo">
+      <figure class="shot">
+        <div class="shot__frame" data-slot="elevation" data-kind="product" data-alt="Ортофото з увімкненим шаром висот і легендою шкали">
+          <img src="img/Highs-map.jpg" width="1500" height="1592" alt="Мапа висот у вигляді теплової карти" loading="lazy">
+        </div>
+        <figcaption><b>Висоти.</b> Чекбокс «Висоти» в рядку «Карта:» вмикає напівпрозорий шар висот (AWS Terrain Tiles, роздільність близько 30 м). Шкала підлаштовується під видиму область, легенда показує її межі та висоту під курсором. Море лишається прозорим, а в оффлайн-режимі шар працює із завантажених тайлів.</figcaption>
+      </figure>
+      <figure class="shot">
+        <div class="shot__frame" data-slot="dark" data-kind="product" data-alt="Головне вікно і Налаштування в темній темі">
+          <img src="img/black-theme.jpg" width="2000" height="1315" alt="Темна тема: головне вікно і налаштування" loading="lazy">
+        </div>
+        <figcaption><b>Тема.</b> «Загальні», потім «Оформлення»: як у системі, світла або темна. Застосовується одразу, без перезапуску.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- Bulk markers -->
+<section class="section-wrap band--ink" id="bulk-markers">
+  <div class="container">
+    <div class="head">
+      <h2>Список координат на карту одним кліком</h2>
+      <p class="lead">Відкрийте діалог «Позначки», вставте список точок (по одній на рядок, у будь-якому форматі) і відобразіть їх на карті. Результат можна зберегти як автономний HTML-файл з інтерактивною картою Leaflet.</p>
+    </div>
+
+    <figure class="shot showcase">
+      <div class="shot__frame" data-slot="markers-map" data-kind="product" data-alt="Збережений HTML-файл: позначки на карті і таблиця MGRS у правому куті">
+        <img src="img/markers-map.jpg" width="2000" height="1127" alt="Позначки на карті з таблицею MGRS" loading="lazy">
+      </div>
+      <figcaption>Карта з позначками та таблицею MGRS у правому куті. Клік на рядок центрує карту на точці та відкриває спливаюче вікно з координатами</figcaption>
+    </figure>
+
+    <div class="pair">
+      <figure class="shot">
+        <div class="shot__frame" data-slot="markers-dialog" data-kind="product" data-alt="Діалог «Позначки» зі списком точок і двома помилковими рядками">
+          <img src="img/markers-dialog.jpg" width="1205" height="1262" alt="Діалог Масові позначки" loading="lazy">
+        </div>
+        <figcaption>Діалог «Позначки»: помилкові рядки підсвічуються червоним, кількість валідних точок відображається внизу</figcaption>
+      </figure>
+      <div class="board">
+        <table>
+          <caption>Формат рядка</caption>
+          <tr><th scope="row">MGRS, підпис</th><td><code>37U CP 94712 95805 — Точка А</code></td></tr>
+          <tr><th scope="row">DD, підпис</th><td><code>48.70639, 37.56889 Точка Б</code></td></tr>
+          <tr><th scope="row">DMS, підпис</th><td><code>48°01'15"N 37°48'36"E — Позиція</code></td></tr>
+          <tr><th scope="row">UTM, підпис</th><td><code>37N 411286 5319318 КП</code></td></tr>
+          <tr><th scope="row">УСК-2000, підпис</th><td><code>53-21447 74-11251 Ціль</code></td></tr>
+        </table>
+        <p class="board__note">Роздільник між координатами та підписом: <code>—</code> або <code>:</code> або пробіл. Підпис необов'язковий. Режим <b>«Спочатку опис»</b> призначений для списків виду <code>Назва — координати</code>.</p>
+      </div>
+    </div>
+
+    <div class="actions3">
+      <div>
+        <h3>Показати на карті</h3>
+        <p>Відображає всі точки у головному вікні та автоматично масштабує карту під набір.</p>
+      </div>
+      <div>
+        <h3>Завантажити HTML</h3>
+        <p>Автономний HTML-файл з Leaflet-картою. Інтернет потрібен лише для тайлів, сам файл працює офлайн.</p>
+      </div>
+      <div>
+        <h3>Таблиця MGRS у HTML</h3>
+        <p>Напівпрозора таблиця у правому куті збереженого файлу з переліком усіх точок і посиланнями на них.</p>
       </div>
     </div>
   </div>
-</div>
-</div>
+</section>
 
-<!-- ── Features ── -->
-<div class="section-wrap" id="features">
-<div class="container">
-  <span class="section-num">02 — Можливості</span>
-  <h2>Все, що потрібно для роботи з координатами</h2>
-  <p class="section-desc">Степан автоматично розпізнає формат і миттєво конвертує у всі підтримувані системи — без зайніх кроків.</p>
-  <div class="features-list">
-    <div class="fitem">
-      <span class="fnum">01</span>
-      <div>
-        <h3>Автовизначення формату</h3>
-        <p>Вставте координату в будь-якому форматі — MGRS, DD, DMS, UTM або УСК-2000 — і отримайте всі варіанти одразу.</p>
-      </div>
+<!-- Automation -->
+<section class="section-wrap section-wrap--l" id="automation">
+  <div class="container">
+    <div class="head">
+      <h2>Степан у ваших скриптах</h2>
+      <p class="lead">CLI та HTTP API дозволяють вбудувати конвертацію координат у будь-який pipeline: від простого Bash-скрипту до веб-застосунку.</p>
     </div>
-    <div class="fitem">
-      <span class="fnum">02</span>
-      <div>
-        <h3>Вбудована карта</h3>
-        <p>Три шари: OpenStreetMap (вулиці), супутник Esri з підписами і OpenTopoMap (топографія). Точка конвертації відображається миттєво.</p>
-      </div>
-    </div>
-    <div class="fitem">
-      <span class="fnum">03</span>
-      <div>
-        <h3>Командний рядок (CLI)</h3>
-        <p>Повноцінний CLI для скриптів та автоматизації. Підтримується фільтр за форматом, raw-виведення і генерація посилань на карту.</p>
-      </div>
-    </div>
-    <div class="fitem">
-      <span class="fnum">04</span>
-      <div>
-        <h3>Вбудований HTTP API</h3>
-        <p><code>GET /api/convert?q=37UDB...</code> повертає JSON з усіма форматами. Інтеграція з будь-яким інструментом.</p>
-      </div>
-    </div>
-    <div class="fitem">
-      <span class="fnum">05</span>
-      <div>
-        <h3>Системний трей</h3>
-        <p>Мінімізується в трей, не займає місце на панелі задач. Координати можна вводити прямо з іконки трею.</p>
-      </div>
-    </div>
-    <div class="fitem">
-      <span class="fnum">06</span>
-      <div>
-        <h3>Копіювання одним кліком</h3>
-        <p>Поряд з кожним форматом — кнопка копіювання. Швидко і без зайвих рухів.</p>
-      </div>
-    </div>
-    <div class="fitem">
-      <span class="fnum">07</span>
-      <div>
-        <h3>Відкрити на карті</h3>
-        <p>Швидкий перехід до Google Maps, OpenStreetMap або Bing Maps за одним кліком без ручного введення.</p>
-      </div>
-    </div>
-    <div class="fitem">
-      <span class="fnum">08</span>
-      <div>
-        <h3>Мультимовний інтерфейс</h3>
-        <p>Інтерфейс доступний українською та англійською мовами з миттєвим перемиканням у налаштуваннях.</p>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-
-<!-- ── Bulk Markers ── -->
-<div class="section-wrap" id="bulk-markers">
-<div class="container">
-  <span class="section-num">03 — Масові позначки на карті</span>
-  <h2>Список координат — на карту одним кліком</h2>
-  <p class="section-desc">Відкрийте діалог «Позначки», вставте список точок — по одній на рядок у будь-якому форматі — і відобразіть їх на карті. Результат можна зберегти як автономний HTML-файл з інтерактивною картою Leaflet.</p>
-
-  <div class="screenshots-row" style="margin-bottom:2rem;">
-    <div>
-      <div class="screenshot-frame">
-        <img src="img/PointList.png" alt="Діалог Масові позначки" loading="lazy">
-      </div>
-      <p class="screenshot-caption">Діалог «Позначки» — помилкові рядки підсвічуються червоним, кількість валідних точок відображається внизу</p>
-    </div>
-    <div>
-      <p style="font-family:'Consolas','Courier New',monospace;font-size:.67rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;border-left:4px solid var(--rule);padding-left:.75rem;margin-bottom:.9rem;">Формат рядка</p>
-      <table style="width:100%;border-collapse:collapse;font-family:'Consolas','Courier New',monospace;font-size:.82rem;">
-        <tr style="border-bottom:1px solid var(--rule2);"><td style="padding:.45rem .5rem .45rem 0;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap;padding-right:1rem;">MGRS — Підпис</td><td style="padding:.45rem 0;color:var(--coord);">37U CP 94712 95805 — Точка А</td></tr>
-        <tr style="border-bottom:1px solid var(--rule2);"><td style="padding:.45rem .5rem .45rem 0;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap;padding-right:1rem;">DD Підпис</td><td style="padding:.45rem 0;color:var(--coord);">48.70639, 37.56889 Точка Б</td></tr>
-        <tr style="border-bottom:1px solid var(--rule2);"><td style="padding:.45rem .5rem .45rem 0;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap;padding-right:1rem;">DMS — Підпис</td><td style="padding:.45rem 0;color:var(--coord);">48°01'15"N 37°48'36"E — Позиція</td></tr>
-        <tr style="border-bottom:1px solid var(--rule2);"><td style="padding:.45rem .5rem .45rem 0;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap;padding-right:1rem;">UTM Підпис</td><td style="padding:.45rem 0;color:var(--coord);">37N 411286 5319318 КП</td></tr>
-        <tr><td style="padding:.45rem .5rem .45rem 0;color:var(--muted);font-size:.72rem;font-weight:700;text-transform:uppercase;white-space:nowrap;padding-right:1rem;">УСК-2000 Підпис</td><td style="padding:.45rem 0;color:var(--coord);">53-21447 74-11251 Ціль</td></tr>
-      </table>
-      <p style="font-size:.8rem;color:var(--muted);margin-top:.85rem;line-height:1.65;">Роздільник між координатами та підписом: <code>—</code> або <code>:</code> або пробіл. Підпис необов'язковий. Режим <b>«Спочатку опис»</b> — для списків виду «Назва — координати».</p>
-    </div>
-  </div>
-
-  <div>
-    <div class="screenshot-frame">
-      <img src="img/PointListMap.png" alt="Позначки на карті з таблицею MGRS" loading="lazy">
-    </div>
-    <p class="screenshot-caption">Карта з позначками та таблицею MGRS у правому куті — клік на рядок центрує карту на точці та відкриває спливаюче вікно з координатами</p>
-  </div>
-
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--rule);border:2px solid var(--rule);margin-top:1.5rem;">
-    <div style="background:var(--bg);padding:1.25rem 1.5rem;">
-      <p style="font-size:.88rem;font-weight:700;margin-bottom:.35rem;">Показати на карті</p>
-      <p style="font-size:.82rem;color:var(--muted);line-height:1.6;">Відображає всі точки у головному вікні та автоматично масштабує карту під набір.</p>
-    </div>
-    <div style="background:var(--bg);padding:1.25rem 1.5rem;">
-      <p style="font-size:.88rem;font-weight:700;margin-bottom:.35rem;">Завантажити HTML</p>
-      <p style="font-size:.82rem;color:var(--muted);line-height:1.6;">Автономний HTML-файл з Leaflet-картою. Інтернет потрібен лише для тайлів — сам файл працює офлайн.</p>
-    </div>
-    <div style="background:var(--bg);padding:1.25rem 1.5rem;">
-      <p style="font-size:.88rem;font-weight:700;margin-bottom:.35rem;">Таблиця MGRS у HTML</p>
-      <p style="font-size:.82rem;color:var(--muted);line-height:1.6;">Напівпрозора таблиця у правому куті збереженого файлу з переліком усіх точок і посиланнями на них.</p>
-    </div>
-  </div>
-</div>
-</div>
-
-<!-- ── Platforms ── -->
-<div class="section-wrap" id="platforms">
-<div class="container">
-  <span class="section-num">04 — Платформи</span>
-  <h2>Кросплатформена утиліта</h2>
-  <p class="section-desc">Один застосунок — три платформи. Ідентичний функціонал на macOS, Windows та Linux. CI/CD автоматично збирає та тестує кожну версію.</p>
-  <div class="platforms-grid">
-    <div class="pcard">
-      <span class="pcard-sys">macOS 11+</span>
-      <h3>macOS</h3>
-      <p>macOS 11 Big Sur та новіші. Нативна підтримка Apple Silicon (M1/M2/M3) та Intel x86_64.</p>
-      <div class="badges">
-        <span class="badge" id="badge-dmg">DMG</span>
-        <span class="badge">Apple Silicon</span>
-        <span class="badge">Intel x86_64</span>
-      </div>
-    </div>
-    <div class="pcard">
-      <span class="pcard-sys">Windows 10/11</span>
-      <h3>Windows</h3>
-      <p>Windows 10 та Windows 11, 64-bit. Інсталятор автоматично завантажує VC++ Runtime, якщо потрібно.</p>
-      <div class="badges">
-        <span class="badge" id="badge-setup">Setup.exe</span>
-        <span class="badge" id="badge-zip">Portable ZIP</span>
-        <span class="badge">x86_64</span>
-      </div>
-    </div>
-    <div class="pcard">
-      <span class="pcard-sys">Linux x86_64</span>
-      <h3>Linux</h3>
-      <p>Ubuntu 22.04+, Fedora 38+ та інші дистрибутиви. Чотири формати — на будь-який смак.</p>
-      <div class="badges">
-        <span class="badge" id="badge-appimage">AppImage</span>
-        <span class="badge" id="badge-deb">DEB</span>
-        <span class="badge" id="badge-rpm">RPM</span>
-        <span class="badge" id="badge-tarxz">tar.xz</span>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
-
-<!-- ── Install ── -->
-<div class="section-wrap" id="install">
-<div class="container">
-  <span class="section-num">05 — Встановлення</span>
-  <h2>Швидкий старт</h2>
-  <p class="section-desc">
-    Завантажте готовий пакет зі сторінки
-    <a href="https://github.com/keedhost/stepan/releases" target="_blank">Releases</a>.
-    GeographicLib та всі залежності вже включені.
-  </p>
-
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('install','macos',this)">macOS</button>
-    <button class="tab-btn" onclick="switchTab('install','windows',this)">Windows</button>
-    <button class="tab-btn" onclick="switchTab('install','linux',this)">Linux</button>
-  </div>
-
-  <div id="install-macos" class="tab-panel active">
-    <div class="note note-warn">Застосунок не підписаний сертифікатом Apple Developer. Перед першим запуском потрібно зняти карантинний атрибут.</div>
-    <p class="step-title">DMG (рекомендовано)</p>
-    <pre data-lang="bash"><span class="cm"># Змонтуйте DMG і скопіюйте в Applications</span>
-hdiutil attach Stepan-*.dmg
-cp -R /Volumes/Stepan/Stepan.app /Applications/
-
-<span class="cm"># Зніміть карантин — один раз</span>
-sudo xattr -r -c /Applications/Stepan.app
-
-<span class="cm"># Запустіть</span>
-open /Applications/Stepan.app</pre>
-    <p class="step-title">Альтернатива без Terminal</p>
-    <p style="color:var(--muted);font-size:.875rem">Натисніть правою кнопкою на <strong>Stepan.app</strong> → <strong>Відкрити</strong> → підтвердіть у діалозі. Після цього Gatekeeper запам'ятає ваш вибір і наступні запуски будуть звичайними.</p>
-  </div>
-
-  <div id="install-windows" class="tab-panel">
-    <p class="step-title" style="margin-top:0">Інсталятор (рекомендовано)</p>
-    <pre data-lang="bash"><span class="cm"># Запустіть Setup.exe і дотримуйтесь інструкцій</span>
-Stepan-*-windows-x64-Setup.exe
-
-<span class="cm"># Якщо VC++ Redistributable відсутній — інсталятор
-# автоматично завантажить і встановить його</span></pre>
-    <p class="step-title">Портативна версія (без встановлення)</p>
-    <pre data-lang="powershell"><span class="cm"># Розпакуйте в будь-яке зручне місце</span>
-Expand-Archive Stepan-*-windows-x64.zip -DestinationPath C:\Programs\
-
-<span class="cm"># Запустіть EXE з папки</span>
-.\Stepan-*-windows-x64\Stepan.exe</pre>
-    <div class="note note-info">При першому запуску Windows SmartScreen може показати попередження. Натисніть <strong>«Докладніше»</strong> → <strong>«Все одно виконати»</strong>.</div>
-  </div>
-
-  <div id="install-linux" class="tab-panel">
-    <p class="step-title" style="margin-top:0">AppImage — рекомендовано, будь-який дистрибутив</p>
-    <pre data-lang="bash">chmod +x Stepan-*-linux-x64.AppImage
-./Stepan-*-linux-x64.AppImage</pre>
-    <p class="step-title">DEB — Debian / Ubuntu</p>
-    <pre data-lang="bash">sudo dpkg -i stepan_*.deb
-sudo apt-get install -f   <span class="cm"># підтягне залежності, якщо потрібно</span></pre>
-    <p class="step-title">RPM — Fedora / RHEL / openSUSE</p>
-    <pre data-lang="bash">sudo dnf install ./stepan-*.rpm</pre>
-    <p class="step-title">tar.xz — портативно</p>
-    <pre data-lang="bash">tar -xJf Stepan-*-linux-x64.tar.xz
-./bin/stepan</pre>
-    <div class="note note-info">На деяких системах для AppImage потрібен FUSE: <code>sudo apt install libfuse2</code></div>
-  </div>
-</div>
-</div>
-
-<!-- ── Automation ── -->
-<div class="section-wrap" id="automation">
-<div class="container">
-  <span class="section-num">06 — Автоматизація</span>
-  <h2>Степан у ваших скриптах</h2>
-  <p class="section-desc">CLI та HTTP API дозволяють вбудувати конвертацію координат у будь-який pipeline — від простого Bash-скрипту до веб-застосунку.</p>
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('auto','bash',this)">Bash</button>
-    <button class="tab-btn" onclick="switchTab('auto','python',this)">Python</button>
-    <button class="tab-btn" onclick="switchTab('auto','api',this)">HTTP API</button>
+    <button type="button" class="tab-btn active" onclick="switchTab('auto','bash',this)">Bash</button>
+    <button type="button" class="tab-btn" onclick="switchTab('auto','python',this)">Python</button>
+    <button type="button" class="tab-btn" onclick="switchTab('auto','api',this)">HTTP API</button>
   </div>
 
   <!-- Bash -->
@@ -790,7 +362,7 @@ print('\nГотово: ' + str(len(rows)) + ' OK,  '
 
   <!-- API -->
   <div id="auto-api" class="tab-panel">
-    <p class="auto-desc">Увімкніть HTTP-сервер у Степан → <strong style="color:var(--text)">Налаштування → Веб-сервер</strong>. Оберіть мережевий інтерфейс і порт (за замовчуванням 8080). Сервер приймає будь-який підтримуваний формат координати.</p>
+    <p class="auto-desc">Увімкніть HTTP-сервер у Степан → <strong>Налаштування → Веб-сервер</strong>. Оберіть мережевий інтерфейс і порт (за замовчуванням 8080). Сервер приймає будь-який підтримуваний формат координати.</p>
     <p class="api-label">curl</p>
 <pre data-lang="bash"><span class="cm"># Конвертувати MGRS</span>
 curl "http://localhost:8080/api/convert?q=37UDB1234567890"
@@ -834,28 +406,30 @@ for q in coords:
     print(f'  DMS:     {d["dms"]}')
     print(f'  lat/lon: {d["lat"]}, {d["lon"]}')
     print()</pre>
-    <div class="note note-info" style="margin-top:1.25rem">
-      API доступний лише в межах обраного мережевого інтерфейсу. Для доступу з інших пристроїв у мережі — оберіть <code>0.0.0.0</code> або конкретний IP у налаштуваннях.
+    <div class="note note-info">
+      API доступний лише в межах обраного мережевого інтерфейсу. Для доступу з інших пристроїв у мережі оберіть <code>0.0.0.0</code> або конкретний IP у налаштуваннях.
     </div>
   </div>
-</div>
-</div>
+  </div>
+</section>
 
-<!-- ── Build ── -->
-<div class="section-wrap" id="build">
-<div class="container">
-  <span class="section-num">07 — Збірка з вихідного коду</span>
-  <h2>Зібрати самостійно</h2>
-  <p class="section-desc">GeographicLib завантажується автоматично через CMake FetchContent при першій збірці. Потрібні лише Qt 6 і C++17-компілятор.</p>
-
+<!-- Build and stack -->
+<section class="section-wrap band--paper" id="build">
+  <div class="container">
+    <div class="head">
+      <h2>Зібрати самостійно</h2>
+      <p class="lead">GeographicLib завантажується автоматично через CMake FetchContent при першій збірці. Потрібні лише Qt 6 і C++17-компілятор.</p>
+    </div>
+    <div class="split-code">
+      <div>
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('build','macos',this)">macOS</button>
-    <button class="tab-btn" onclick="switchTab('build','windows',this)">Windows</button>
-    <button class="tab-btn" onclick="switchTab('build','linux',this)">Linux</button>
+    <button type="button" class="tab-btn active" onclick="switchTab('build','macos',this)">macOS</button>
+    <button type="button" class="tab-btn" onclick="switchTab('build','windows',this)">Windows</button>
+    <button type="button" class="tab-btn" onclick="switchTab('build','linux',this)">Linux</button>
   </div>
 
   <div id="build-macos" class="tab-panel active">
-    <p class="step-title" style="margin-top:0">Вимоги: CMake ≥ 3.20, Qt 6, Xcode CLT</p>
+    <p class="step-title">Вимоги: CMake ≥ 3.20, Qt 6, Xcode CLT</p>
     <pre data-lang="bash">xcode-select --install
 brew install cmake qt@6</pre>
     <p class="step-title">Клонувати та зібрати</p>
@@ -871,7 +445,7 @@ open build/Stepan.app</pre>
   </div>
 
   <div id="build-windows" class="tab-panel">
-    <p class="step-title" style="margin-top:0">Вимоги: Visual Studio 2022 (з C++), Qt 6, CMake, Ninja</p>
+    <p class="step-title">Вимоги: Visual Studio 2022 (з C++), Qt 6, CMake, Ninja</p>
     <pre data-lang="powershell"><span class="cm"># Встановіть Qt через qt.io/download або winget</span>
 winget install Kitware.CMake
 winget install Ninja-build.Ninja</pre>
@@ -886,14 +460,14 @@ windeployqt --release build\Stepan.exe</pre>
   </div>
 
   <div id="build-linux" class="tab-panel">
-    <p class="step-title" style="margin-top:0">Залежності — Ubuntu / Debian</p>
+    <p class="step-title">Залежності: Ubuntu / Debian</p>
     <pre data-lang="bash">sudo apt-get install -y \
   cmake ninja-build \
   qt6-base-dev \
   qt6-webengine-dev \
   qt6-webchannel-dev \
   libgl-dev</pre>
-    <p class="step-title">Залежності — Fedora</p>
+    <p class="step-title">Залежності: Fedora</p>
     <pre data-lang="bash">sudo dnf install -y \
   cmake ninja-build \
   qt6-qtbase-devel \
@@ -908,147 +482,106 @@ cmake --build build --parallel $(nproc)
 <span class="cm"># Запустити</span>
 ./build/stepan</pre>
   </div>
-</div>
-</div>
-
-<!-- ── Tech Stack ── -->
-<div class="section-wrap" id="stack">
-<div class="container">
-  <span class="section-num">08 — Технологічний стек</span>
-  <h2>Побудований на перевіреному</h2>
-  <p class="section-desc">Відкрите програмне забезпечення без зайніх залежностей. Все статично прилінковане або тягнеться автоматично.</p>
-  <div class="stack-grid">
-    <div class="sitem">
-      <div>
-        <h4>Qt 6</h4>
-        <p>Widgets, WebEngineWidgets, WebChannel, Network — кросплатформний GUI-фреймворк</p>
       </div>
-    </div>
-    <div class="sitem">
-      <div>
-        <h4>C++17</h4>
-        <p>MSVC 2022, GCC 12+, Clang 15+. CMake 3.20+ як система збірки, Ninja як бекенд</p>
-      </div>
-    </div>
-    <div class="sitem">
-      <div>
-        <h4>GeographicLib 2.3</h4>
-        <p>Точні геодезичні обчислення: MGRS, UTM, координатні перетворення. Статична бібліотека — нуль runtime-залежностей</p>
-      </div>
-    </div>
-    <div class="sitem">
-      <div>
-        <h4>Leaflet.js</h4>
-        <p>Вбудована інтерактивна карта з підтримкою трьох tile-провайдерів</p>
-      </div>
-    </div>
-    <div class="sitem">
-      <div>
-        <h4>CMake FetchContent</h4>
-        <p>GeographicLib завантажується автоматично при першій збірці — жодних ручних залежностей</p>
-      </div>
-    </div>
-    <div class="sitem">
-      <div>
-        <h4>CPack + NSIS</h4>
-        <p>Автоматичне пакування: DEB, RPM, tar.xz для Linux; NSIS-інсталятор і portable ZIP для Windows</p>
-      </div>
-    </div>
-    <div class="sitem">
-      <div>
-        <h4>GitHub Actions CI/CD</h4>
-        <p>Збірка, пакування та тестування GUI на macOS, Windows і Linux після кожного push</p>
-      </div>
-    </div>
-    <div class="sitem">
-      <div>
-        <h4>OpenStreetMap · Esri · OpenTopoMap</h4>
-        <p>Три джерела тайлів: вулиці, супутник з підписами, топографічна карта</p>
+      <div class="stack" id="stack">
+        <h3>Побудований на перевіреному</h3>
+        <p>Відкрите програмне забезпечення без зайвих залежностей. Все статично прилінковане або тягнеться автоматично.</p>
+        <table>
+          <thead><tr><th scope="col">Компонент</th><th scope="col">Роль</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Qt 6</th><td>Widgets, WebEngineWidgets, WebChannel, Network: кросплатформний GUI-фреймворк</td></tr>
+            <tr><th scope="row">C++17</th><td>MSVC 2022, GCC 12+, Clang 15+. CMake 3.20+ як система збірки, Ninja як бекенд</td></tr>
+            <tr><th scope="row">GeographicLib 2.3</th><td>Точні геодезичні обчислення: MGRS, UTM, координатні перетворення. Статична бібліотека, нуль runtime-залежностей</td></tr>
+            <tr><th scope="row">Leaflet.js</th><td>Вбудована інтерактивна карта з підтримкою трьох tile-провайдерів</td></tr>
+            <tr><th scope="row">CMake FetchContent</th><td>GeographicLib завантажується автоматично при першій збірці, жодних ручних залежностей</td></tr>
+            <tr><th scope="row">CPack + NSIS</th><td>Автоматичне пакування: DEB, RPM, tar.xz для Linux; NSIS-інсталятор і portable ZIP для Windows</td></tr>
+            <tr><th scope="row">GitHub Actions CI/CD</th><td>Збірка, пакування та тестування GUI на macOS, Windows і Linux після кожного push</td></tr>
+            <tr><th scope="row">OpenStreetMap, Esri, OpenTopoMap</th><td>Три джерела тайлів: вулиці, супутник з підписами, топографічна карта</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
-</div>
-</div>
+</section>
 
-<!-- ── Changelog ── -->
-<div class="section-wrap" id="changelog">
-<div class="container">
-  <span class="section-num">09 — Останні зміни</span>
-  <h2>Що нового</h2>
-  <p class="section-desc">Завантажується в реальному часі з GitHub API.</p>
-  <div id="commits-container" class="commits-list">
-    <div class="commits-state">Завантаження...</div>
+<!-- Changelog -->
+<section class="section-wrap" id="changelog">
+  <div class="container side">
+    <div class="side__head">
+      <h2>Що нового</h2>
+      <p>Завантажується в реальному часі з GitHub API.</p>
+      <p class="side__more"><a href="https://github.com/keedhost/stepan/commits/main" target="_blank">Переглянути всі зміни на GitHub</a></p>
+    </div>
+    <div class="side__body">
+      <div id="commits-container" class="commits-list">
+        <div class="commits-state">Завантаження…</div>
+      </div>
+    </div>
   </div>
-  <p style="margin-top:1.5rem">
-    <a href="https://github.com/keedhost/stepan/commits/main" target="_blank" style="color:var(--amber)">
-      Переглянути всі зміни на GitHub →
-    </a>
-  </p>
-</div>
-</div>
+</section>
 
-<!-- ── FAQ ── -->
-<div class="section-wrap" id="faq">
-<div class="container">
-  <span class="section-num">10 — Часті запитання</span>
-  <h2>FAQ</h2>
-  <p class="section-desc">Відповіді на найпоширеніші запитання.</p>
-  <div class="faq-list">
+<!-- FAQ -->
+<section class="section-wrap" id="faq">
+  <div class="container side">
+    <div class="side__head">
+      <h2>Часті запитання</h2>
+    </div>
+    <div class="side__body faq-list">
 
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
+      <button type="button" class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">
         Чому на macOS програма не відкривається після завантаження?
-        <svg class="faq-chevron" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
+        <svg class="faq-chevron" aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
       </button>
       <div class="faq-a"><div class="faq-a-inner">
         macOS Gatekeeper блокує застосунки без підпису Apple Developer. Виконайте в Terminal один раз:<br><br>
         <code>sudo xattr -r -c /Applications/Stepan.app</code><br><br>
-        Або: правий клік на <strong>Stepan.app</strong> → <strong>Відкрити</strong> → підтвердіть у діалозі. Після цього Gatekeeper запам'ятає вибір — наступні запуски звичайні.
+        Або: правий клік на <strong>Stepan.app</strong> → <strong>Відкрити</strong> → підтвердіть у діалозі. Після цього Gatekeeper запам'ятає вибір, і наступні запуски будуть звичайними.
       </div></div>
     </div>
 
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
+      <button type="button" class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">
         Чи потрібен інтернет для роботи?
-        <svg class="faq-chevron" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
+        <svg class="faq-chevron" aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
       </button>
       <div class="faq-a"><div class="faq-a-inner">
-        <strong>Ні</strong> — для конвертації координат інтернет не потрібен. Всі обчислення виконуються локально за допомогою GeographicLib.<br><br>
+        <strong>Ні</strong>, для конвертації координат інтернет не потрібен. Всі обчислення виконуються локально за допомогою GeographicLib.<br><br>
         Інтернет потрібен лише для відображення тайлів карти та переходу за посиланнями до Google Maps / OSM.
       </div></div>
     </div>
 
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
+      <button type="button" class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">
         Як використовувати CLI (командний рядок)?
-        <svg class="faq-chevron" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
+        <svg class="faq-chevron" aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
       </button>
       <div class="faq-a"><div class="faq-a-inner">
-        <code>stepan --convert "37UDB1234567890"</code> — всі формати<br><br>
-        <code>stepan --convert "50.4501, 30.5234" --format mgrs</code> — лише MGRS<br><br>
-        <code>stepan --convert "37UDB1234567890" --raw</code> — без форматування, для скриптів<br><br>
-        <code>stepan --convert "37UDB1234567890" --url google</code> — посилання на Google Maps<br><br>
-        <code>stepan --convert "37UDB1234567890" --url all</code> — посилання на всі сервіси<br><br>
-        <code>stepan --help</code> — повна довідка
+        <code>stepan --convert "37UDB1234567890"</code>: всі формати<br><br>
+        <code>stepan --convert "50.4501, 30.5234" --format mgrs</code>: лише MGRS<br><br>
+        <code>stepan --convert "37UDB1234567890" --raw</code>: без форматування, для скриптів<br><br>
+        <code>stepan --convert "37UDB1234567890" --url google</code>: посилання на Google Maps<br><br>
+        <code>stepan --convert "37UDB1234567890" --url all</code>: посилання на всі сервіси<br><br>
+        <code>stepan --help</code>: повна довідка
       </div></div>
     </div>
 
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
+      <button type="button" class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">
         Як використати вбудований HTTP API?
-        <svg class="faq-chevron" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
+        <svg class="faq-chevron" aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
       </button>
       <div class="faq-a"><div class="faq-a-inner">
         Увімкніть HTTP-сервер у <strong>Налаштуваннях</strong> (виберіть інтерфейс та порт). Після цього:<br><br>
         <code>curl "http://localhost:8080/api/convert?q=37UDB1234567890"</code><br><br>
-        Відповідь — JSON з полями: <code>mgrs</code>, <code>dd</code>, <code>dms</code>, <code>utm</code>, <code>usk2000</code>, <code>lat</code>, <code>lon</code>.
+        Відповідь: JSON з полями: <code>mgrs</code>, <code>dd</code>, <code>dms</code>, <code>utm</code>, <code>usk2000</code>, <code>lat</code>, <code>lon</code>.
       </div></div>
     </div>
 
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
+      <button type="button" class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">
         Де зберігаються налаштування програми?
-        <svg class="faq-chevron" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
+        <svg class="faq-chevron" aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
       </button>
       <div class="faq-a"><div class="faq-a-inner">
         <strong>macOS:</strong> <code>~/Library/Preferences/ua.ss-education.stepan.plist</code><br><br>
@@ -1058,47 +591,147 @@ cmake --build build --parallel $(nproc)
     </div>
 
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
+      <button type="button" class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">
         Чи є версія для Android або iOS?
-        <svg class="faq-chevron" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
+        <svg class="faq-chevron" aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
       </button>
       <div class="faq-a"><div class="faq-a-inner">
-        Наразі Степан — виключно десктопний застосунок (macOS, Windows, Linux). Мобільної версії немає.<br><br>
+        Наразі Степан існує лише як десктопний застосунок (macOS, Windows, Linux). Мобільної версії немає.<br><br>
         З мобільного пристрою можна звертатися до вбудованого HTTP API через локальну мережу, якщо сервер увімкнений.
       </div></div>
     </div>
 
     <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)">
-        Чому "Степан"?
-        <svg class="faq-chevron" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
+      <button type="button" class="faq-q" aria-expanded="false" onclick="toggleFaq(this)">
+        Чому «Степан»?
+        <svg class="faq-chevron" aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"/></svg>
       </button>
       <div class="faq-a"><div class="faq-a-inner">
-        Бо Степан — це наш хлопець. Знає де що, і завжди підкаже.
+        Бо Степан наш хлопець. Знає де що, і завжди підкаже.
       </div></div>
     </div>
 
+    </div>
   </div>
-</div>
-</div>
+</section>
 
-<!-- ── Footer ── -->
-<footer>
+<!-- Platforms and install: the close -->
+<section class="section-wrap section-wrap--l band--paper" id="platforms">
   <div class="container">
-    <div class="footer-inner">
-      <div class="footer-left">
-        <strong>Степан</strong>
-        <br>Кросплатформений конвертер систем координат
-        <div class="footer-copy">© 2026 Andrii Kondratiev</div>
-      </div>
-      <div>
-        <div class="footer-links">
-          <a href="https://github.com/keedhost/stepan" target="_blank">GitHub</a>
-          <a href="https://github.com/keedhost/stepan/releases" target="_blank">Releases</a>
-          <a href="https://github.com/keedhost/stepan/issues" target="_blank">Повідомити про помилку</a>
-          <a href="https://github.com/keedhost/stepan/blob/main/LICENSE" target="_blank">GPL-3.0</a>
+    <div class="head">
+      <h2>Кросплатформена утиліта</h2>
+      <p class="lead">Один застосунок, три платформи. Ідентичний функціонал на macOS, Windows та Linux. CI/CD автоматично збирає та тестує кожну версію.</p>
+    </div>
+    <div class="platforms-grid">
+      <div class="pcard">
+        <span class="pcard-sys">macOS 11+</span>
+        <h3>macOS</h3>
+        <p>macOS 11 Big Sur та новіші. Нативна підтримка Apple Silicon (M1/M2/M3) та Intel x86_64.</p>
+        <div class="badges">
+          <span class="badge" id="badge-dmg">DMG</span>
+          <span class="badge">Apple Silicon</span>
+          <span class="badge">Intel x86_64</span>
         </div>
       </div>
+      <div class="pcard">
+        <span class="pcard-sys">Windows 10/11</span>
+        <h3>Windows</h3>
+        <p>Windows 10 та Windows 11, 64-bit. Інсталятор автоматично завантажує VC++ Runtime, якщо потрібно.</p>
+        <div class="badges">
+          <span class="badge" id="badge-setup">Setup.exe</span>
+          <span class="badge" id="badge-zip">Portable ZIP</span>
+          <span class="badge">x86_64</span>
+        </div>
+      </div>
+      <div class="pcard">
+        <span class="pcard-sys">Linux x86_64</span>
+        <h3>Linux</h3>
+        <p>Ubuntu 22.04+, Fedora 38+ та інші дистрибутиви. Чотири формати на будь-який смак.</p>
+        <div class="badges">
+          <span class="badge" id="badge-appimage">AppImage</span>
+          <span class="badge" id="badge-deb">DEB</span>
+          <span class="badge" id="badge-rpm">RPM</span>
+          <span class="badge" id="badge-tarxz">tar.xz</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="install" id="install">
+      <h3>Швидкий старт</h3>
+      <p>
+        Завантажте готовий пакет зі сторінки
+        <a href="https://github.com/keedhost/stepan/releases" target="_blank">Releases</a>.
+        GeographicLib та всі залежності вже включені.
+      </p>
+  <div class="tabs">
+    <button type="button" class="tab-btn active" onclick="switchTab('install','macos',this)">macOS</button>
+    <button type="button" class="tab-btn" onclick="switchTab('install','windows',this)">Windows</button>
+    <button type="button" class="tab-btn" onclick="switchTab('install','linux',this)">Linux</button>
+  </div>
+
+  <div id="install-macos" class="tab-panel active">
+    <div class="note note-warn">Застосунок не підписаний сертифікатом Apple Developer. Перед першим запуском потрібно зняти карантинний атрибут.</div>
+    <p class="step-title">DMG (рекомендовано)</p>
+    <pre data-lang="bash"><span class="cm"># Змонтуйте DMG і скопіюйте в Applications</span>
+hdiutil attach Stepan-*.dmg
+cp -R /Volumes/Stepan/Stepan.app /Applications/
+
+<span class="cm"># Зніміть карантин — один раз</span>
+sudo xattr -r -c /Applications/Stepan.app
+
+<span class="cm"># Запустіть</span>
+open /Applications/Stepan.app</pre>
+    <p class="step-title">Альтернатива без Terminal</p>
+    <p class="plain">Натисніть правою кнопкою на <strong>Stepan.app</strong> → <strong>Відкрити</strong> → підтвердіть у діалозі. Після цього Gatekeeper запам'ятає ваш вибір і наступні запуски будуть звичайними.</p>
+  </div>
+
+  <div id="install-windows" class="tab-panel">
+    <p class="step-title">Інсталятор (рекомендовано)</p>
+    <pre data-lang="bash"><span class="cm"># Запустіть Setup.exe і дотримуйтесь інструкцій</span>
+Stepan-*-windows-x64-Setup.exe
+
+<span class="cm"># Якщо VC++ Redistributable відсутній — інсталятор
+# автоматично завантажить і встановить його</span></pre>
+    <p class="step-title">Портативна версія (без встановлення)</p>
+    <pre data-lang="powershell"><span class="cm"># Розпакуйте в будь-яке зручне місце</span>
+Expand-Archive Stepan-*-windows-x64.zip -DestinationPath C:\Programs\
+
+<span class="cm"># Запустіть EXE з папки</span>
+.\Stepan-*-windows-x64\Stepan.exe</pre>
+    <div class="note note-info">При першому запуску Windows SmartScreen може показати попередження. Натисніть <strong>«Докладніше»</strong> → <strong>«Все одно виконати»</strong>.</div>
+  </div>
+
+  <div id="install-linux" class="tab-panel">
+    <p class="step-title">AppImage (рекомендовано, будь-який дистрибутив)</p>
+    <pre data-lang="bash">chmod +x Stepan-*-linux-x64.AppImage
+./Stepan-*-linux-x64.AppImage</pre>
+    <p class="step-title">DEB для Debian / Ubuntu</p>
+    <pre data-lang="bash">sudo dpkg -i stepan_*.deb
+sudo apt-get install -f   <span class="cm"># підтягне залежності, якщо потрібно</span></pre>
+    <p class="step-title">RPM для Fedora / RHEL / openSUSE</p>
+    <pre data-lang="bash">sudo dnf install ./stepan-*.rpm</pre>
+    <p class="step-title">tar.xz, портативно</p>
+    <pre data-lang="bash">tar -xJf Stepan-*-linux-x64.tar.xz
+./bin/stepan</pre>
+    <div class="note note-info">На деяких системах для AppImage потрібен FUSE: <code>sudo apt install libfuse2</code></div>
+  </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <p class="statement">Степан. Кросплатформений конвертер систем координат.</p>
+    <div class="footer-row">
+      <nav class="footer-links" aria-label="Посилання проєкту">
+        <a href="https://github.com/keedhost/stepan" target="_blank">GitHub</a>
+        <a href="https://github.com/keedhost/stepan/releases" target="_blank">Releases</a>
+        <a href="https://github.com/keedhost/stepan/issues" target="_blank">Повідомити про помилку</a>
+        <a href="https://github.com/keedhost/stepan/blob/main/LICENSE" target="_blank">GPL-3.0</a>
+      </nav>
+      <p class="footer-copy">© 2026 Andrii Kondratiev</p>
     </div>
   </div>
 </footer>
@@ -1119,7 +752,8 @@ function toggleFaq(btn) {
   const item = btn.closest('.faq-item');
   const wasOpen = item.classList.contains('open');
   document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
-  if (!wasOpen) item.classList.add('open');
+  document.querySelectorAll('.faq-q[aria-expanded]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+  if (!wasOpen) { item.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
 }
 
 function timeAgo(date) {
@@ -1159,13 +793,13 @@ async function loadCommits() {
         '<a class="chash" href="' + c.html_url + '" target="_blank" title="Відкрити коміт">' + sha + '</a>' +
         '<div class="cinfo">' +
           '<div class="cmsg">' + msg + '</div>' +
-          '<div class="cmeta">' + author + ' &nbsp;·&nbsp; ' + dateStr + ' &nbsp;·&nbsp; ' + ago + '</div>' +
+          '<div class="cmeta"><span>' + author + '</span><span>' + dateStr + '</span><span>' + ago + '</span></div>' +
         '</div>' +
       '</div>';
     }).join('');
   } catch (e) {
     el.innerHTML = '<div class="commits-state">Не вдалося завантажити зміни. ' +
-      '<a href="https://github.com/' + REPO + '/commits" target="_blank" style="color:var(--amber)">Переглянути на GitHub →</a></div>';
+      '<a href="https://github.com/' + REPO + '/commits" target="_blank">Переглянути на GitHub</a></div>';
   }
 }
 
@@ -1221,6 +855,24 @@ document.querySelectorAll('pre[data-lang]').forEach(block => {
   block.appendChild(code);
 });
 hljs.highlightAll();
+</script>
+<script>
+/* Retracting section bar: hides while scrolling down, returns on scroll up. */
+(function () {
+  const bar = document.querySelector('.bar');
+  if (!bar) return;
+  let lastY = window.scrollY, ticking = false;
+  window.addEventListener('scroll', function () {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () {
+      const y = window.scrollY;
+      bar.classList.toggle('is-retracted', y > lastY && y > 400 && !bar.contains(document.activeElement));
+      lastY = y;
+      ticking = false;
+    });
+  }, { passive: true });
+})();
 </script>
 </body>
 </html>
