@@ -154,7 +154,8 @@ MainWindow::~MainWindow() {
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
-    setWindowTitle("Степан — твій друг в системі координат");
+    setWindowTitle(appTr("Степан — твій друг в системі координат",
+                         "Stepan — your friend in coordinate systems"));
     setMinimumSize(620, 700);
     resize(750, 850);
     setupUi();

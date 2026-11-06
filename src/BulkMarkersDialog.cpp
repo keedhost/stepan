@@ -47,7 +47,7 @@
 BulkMarkersDialog::BulkMarkersDialog(QWidget* parent)
     : QDialog(parent)
 {
-    setWindowTitle("Масові позначки на карті");
+    setWindowTitle(appTr("Масові позначки на карті", "Bulk Markers on the Map"));
     setMinimumSize(620, 580);
     resize(680, 640);
     setWindowFlags(windowFlags() | Qt::WindowMaximizeButtonHint);

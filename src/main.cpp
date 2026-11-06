@@ -246,12 +246,14 @@ int main(int argc, char* argv[]) {
 
     QApplication app(argc, argv);
     app.setApplicationName("Stepan");
-    app.setApplicationDisplayName("Степан");
     app.setOrganizationName("ss-education");
     app.setOrganizationDomain("ss-education.com.ua");
     app.setApplicationVersion(QString::fromLatin1(APP_VERSION_FULL));
 
     appLangIsEnglish() = QSettings().value("language", "uk").toString() == "en";
+    // Set after the language is known: Windows and Linux append the display
+    // name to every window title ("… - Степан").
+    app.setApplicationDisplayName(appTr("Степан", "Stepan"));
     Theme::applyMode(Theme::savedMode());
 
     QIcon appIcon;
