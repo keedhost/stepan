@@ -1,5 +1,28 @@
+/*
+ * Stepan — твій друг в системі координат
+ * Copyright (C) 2026 Andrii Kondratiev
+ *
+ * Слава Україні! Слава ЗСУ!
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 #include <QApplication>
+#include <QColor>
 #include <QPalette>
 #include <QSettings>
 #include <QStyleHints>
@@ -13,18 +36,68 @@
 namespace Theme {
 
 // User-selected theme: "system" (follow OS), "light" or "dark". Stored in
-// QSettings under "theme". Forcing a scheme via QStyleHints switches the
-// native palette, which fires QEvent::PaletteChange on widgets — MainWindow
+// QSettings under "theme". Forcing a scheme (QStyleHints on Qt >= 6.8, an
+// explicit app palette on older Qt) switches the application palette, which fires QEvent::PaletteChange on widgets — MainWindow
 // already rebuilds its stylesheet on that, so the change applies live.
 inline QString savedMode() {
     return QSettings().value("theme", "system").toString();
 }
 
+// Explicit light/dark application palette, used to force a theme on Qt
+// versions without QStyleHints::setColorScheme() (added in Qt 6.8; CI builds
+// against Qt 6.7 on Windows/macOS and Ubuntu's Qt 6.4 on Linux).
+inline QPalette forcedPalette(bool dark) {
+    struct Tones { const char *window, *text, *base, *altBase, *button, *mid, *disabled,
+                                *placeholder, *link, *bright; };
+    const Tones v = dark
+        ? Tones{"#2b2b2b", "#e8e8e8", "#3a3a3a", "#323232", "#3c3c3c",
+                "#5a5a5a", "#808080", "#a0a0a0", "#7db2ff", "#ff7a7a"}
+        : Tones{"#ececec", "#1a1a1a", "#ffffff", "#f5f5f5", "#f0f0f0",
+                "#c8c8c8", "#9a9a9a", "#666666", "#2a5a9a", "#c0392b"};
+    QPalette p;
+    p.setColor(QPalette::Window,          QColor(v.window));
+    p.setColor(QPalette::WindowText,      QColor(v.text));
+    p.setColor(QPalette::Base,            QColor(v.base));
+    p.setColor(QPalette::AlternateBase,   QColor(v.altBase));
+    p.setColor(QPalette::Text,            QColor(v.text));
+    p.setColor(QPalette::Button,          QColor(v.button));
+    p.setColor(QPalette::ButtonText,      QColor(v.text));
+    p.setColor(QPalette::ToolTipBase,     QColor(v.button));
+    p.setColor(QPalette::ToolTipText,     QColor(v.text));
+    p.setColor(QPalette::PlaceholderText, QColor(v.placeholder));
+    p.setColor(QPalette::Link,            QColor(v.link));
+    p.setColor(QPalette::BrightText,      QColor(v.bright));
+    p.setColor(QPalette::Highlight,       QColor("#3d7cf5"));
+    p.setColor(QPalette::HighlightedText, QColor("#ffffff"));
+    p.setColor(QPalette::Mid,             QColor(v.mid));
+    p.setColor(QPalette::Light,           QColor(v.button).lighter(120));
+    p.setColor(QPalette::Midlight,        QColor(v.button).lighter(110));
+    p.setColor(QPalette::Dark,            QColor(v.mid).darker(120));
+    p.setColor(QPalette::Shadow,          QColor("#000000"));
+    for (auto role : {QPalette::WindowText, QPalette::Text, QPalette::ButtonText})
+        p.setColor(QPalette::Disabled, role, QColor(v.disabled));
+    return p;
+}
+
+// Palette-based fallback for applyMode(). A default-constructed QPalette has
+// an empty resolve mask, so setting it hands control back to the platform
+// palette (which keeps following OS light/dark changes) for "system".
+inline void applyModeViaPalette(const QString& mode) {
+    if (mode == "light" || mode == "dark")
+        QApplication::setPalette(forcedPalette(mode == "dark"));
+    else
+        QApplication::setPalette(QPalette());
+}
+
 inline void applyMode(const QString& mode) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
     auto* hints = QGuiApplication::styleHints();
     if (mode == "light")      hints->setColorScheme(Qt::ColorScheme::Light);
     else if (mode == "dark")  hints->setColorScheme(Qt::ColorScheme::Dark);
     else                      hints->unsetColorScheme();
+#else
+    applyModeViaPalette(mode);
+#endif
 }
 
 inline bool isDark() {
