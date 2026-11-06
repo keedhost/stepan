@@ -84,11 +84,14 @@ CoordinateData CoordinateParser::buildFromLatLon(double lat, double lon, Coordin
     // DMS helper
     auto toDMS = [](double deg, bool isLat) -> QString {
         const char hemi = (deg >= 0) ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W');
-        deg = std::abs(deg);
-        const int d = static_cast<int>(deg);
-        const double mf = (deg - d) * 60.0;
-        const int m = static_cast<int>(mf);
-        const double s = (mf - m) * 60.0;
+        // Work in hundredths of an arc-second, the printed precision, so a
+        // value that rounds up to 60.00" carries into the minutes (and
+        // degrees) instead of being printed as 60.00" — which the parser
+        // rightly rejects, so the app could not read its own output back.
+        const long long total = std::llround(std::abs(deg) * 360000.0);
+        const int d = static_cast<int>(total / 360000);
+        const int m = static_cast<int>((total / 6000) % 60);
+        const double s = (total % 6000) / 100.0;
         return QString("%1°%2'%3\"%4")
             .arg(d)
             .arg(m, 2, 10, QChar('0'))
@@ -326,6 +329,12 @@ std::optional<CoordinateData> CoordinateParser::tryDMS(const QString& input) {
     );
     const auto match = re.match(input);
     if (!match.hasMatch()) return std::nullopt;
+
+    // Minutes and seconds must be below 60. GeographicLib rejects them above,
+    // but that exception is swallowed above and this fallback used to accept
+    // them, so a typo like 50°75'00" silently became 51.25° (~30 km off).
+    for (int g : {2, 3, 6, 7})
+        if (match.captured(g).toDouble() >= 60.0) return std::nullopt;
 
     double lat = match.captured(1).toDouble()
                + match.captured(2).toDouble() / 60.0
