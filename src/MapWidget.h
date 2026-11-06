@@ -31,6 +31,10 @@ public:
     // folderPath is the offline maps root, containing <type>/<z>/<x>/<y>.png.
     void setOfflineMode(bool enabled, const QString& folderPath);
 
+    // Elevation heatmap overlay (online AWS Terrain Tiles) with an adaptive
+    // color scale, legend and elevation-under-cursor readout.
+    void setElevationVisible(bool visible);
+
     QPixmap grabMap() const;
 
     static QString exportBulkMarkersHtml(const QVector<BulkMarker>& markers, bool showTable = false);
@@ -53,6 +57,8 @@ private:
     QString m_pendingOfflinePath;
 
     QString m_pendingLayerKey; // empty = nothing pending
+
+    bool m_elevationVisible = false;
 
     void runJs(const QString& js);
 };

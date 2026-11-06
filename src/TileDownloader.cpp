@@ -99,6 +99,12 @@ void TileDownloader::downloadNext() {
         url = QUrl(QStringLiteral(
             "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/%1/%2/%3")
             .arg(z).arg(y).arg(x));
+    } else if (m_region.typeKey == "elevation") {
+        // AWS Terrain Tiles, Terrarium encoding (height packed into RGB) —
+        // decoded and colored client-side by map.html's elevation layer.
+        url = QUrl(QStringLiteral(
+            "https://elevation-tiles-prod.s3.amazonaws.com/terrarium/%1/%2/%3.png")
+            .arg(z).arg(x).arg(y));
     } else if (m_region.typeKey == "topo") {
         static const char kSub[] = {'a', 'b', 'c'};
         const char sub = kSub[m_subdomainCounter++ % 3];

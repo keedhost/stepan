@@ -14,6 +14,7 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QPushButton>
+#include <QCheckBox>
 #include <QButtonGroup>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -326,6 +327,13 @@ void MainWindow::setupUi() {
     mapHeader->addWidget(mapLbl);
     mapHeader->addLayout(segRow);
 
+    auto* elevationCheck = new QCheckBox(appTr("Висоти", "Elevation"), central);
+    elevationCheck->setToolTip(appTr(
+        "Показати мапу висот (теплова карта, шкала підлаштовується під видиму область)",
+        "Show elevation heatmap (color scale adapts to the visible area)"));
+    mapHeader->addSpacing(6);
+    mapHeader->addWidget(elevationCheck);
+
     auto* bulkMarkersBtn = new QPushButton(appTr("📍 Позначки...", "📍 Markers..."), central);
     bulkMarkersBtn->setObjectName("externalBtn");
     bulkMarkersBtn->setToolTip(appTr(
@@ -369,6 +377,13 @@ void MainWindow::setupUi() {
     });
     connect(bulkMarkersBtn, &QPushButton::clicked,
             this, &MainWindow::onOpenBulkMarkers);
+
+    connect(elevationCheck, &QCheckBox::toggled, this, [this](bool on) {
+        m_mapWidget->setElevationVisible(on);
+        QSettings().setValue("elevationVisible", on);
+    });
+    if (QSettings().value("elevationVisible", false).toBool())
+        elevationCheck->setChecked(true);
 
     // Restore last-used map source
     const QString savedMap = QSettings().value("defaultMap", "streets").toString();

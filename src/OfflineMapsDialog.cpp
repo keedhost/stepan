@@ -26,6 +26,7 @@ constexpr qint64 kMaxTileCount  = 100000;
 constexpr int kZoomFloor = 6;
 
 int providerMaxZoom(const QString& typeKey) {
+    if (typeKey == "elevation") return 15;   // AWS Terrain Tiles' native max
     return typeKey == "topo" ? 17 : 19;
 }
 
@@ -56,6 +57,7 @@ OfflineMapsDialog::OfflineMapsDialog(const QString& basePath, const QString& ini
     m_typeCombo->addItem(appTr("Вулиці (OSM)", "Streets (OSM)"),       "streets");
     m_typeCombo->addItem(appTr("Ортофото (Esri)", "Orthoimage (Esri)"), "ortho");
     m_typeCombo->addItem(appTr("Топографічна", "Topographic"),         "topo");
+    m_typeCombo->addItem(appTr("Висоти (для шару «Висоти»)", "Elevation (for the Elevation layer)"), "elevation");
     const int typeIdx = m_typeCombo->findData(initialType);
     if (typeIdx >= 0) m_typeCombo->setCurrentIndex(typeIdx);
     form->addRow(appTr("Тип карти:", "Map type:"), m_typeCombo);
@@ -282,6 +284,10 @@ TileDownloader::Region OfflineMapsDialog::currentRegion() const {
     r.east     = qMax(m_west->value(), m_east->value());
     r.minZoom  = qMin(m_minZoom->value(), m_maxZoom->value());
     r.maxZoom  = qMax(m_minZoom->value(), m_maxZoom->value());
+    // Advanced mode's spin boxes allow up to 19 for every type; tiles past the
+    // provider's max zoom don't exist and would only be counted as failures.
+    r.maxZoom  = qMin(r.maxZoom, providerMaxZoom(r.typeKey));
+    r.minZoom  = qMin(r.minZoom, r.maxZoom);
     return r;
 }
 

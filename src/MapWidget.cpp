@@ -1,5 +1,6 @@
 #include "MapWidget.h"
 #include "TileSchemeHandler.h"
+#include "AppLocale.h"
 #include <QVBoxLayout>
 #include <QWebEngineView>
 #include <QWebEnginePage>
@@ -49,6 +50,8 @@ MapWidget::MapWidget(QWidget* parent) : QWidget(parent) {
             setOfflineMode(m_pendingOfflineEnabled, m_pendingOfflinePath);
             m_pendingOfflineSet = false;
         }
+        if (m_elevationVisible)
+            setElevationVisible(true);
     });
 
     m_view->setUrl(QUrl("qrc:/map.html"));
@@ -103,6 +106,14 @@ void MapWidget::setOfflineMode(bool enabled, const QString& folderPath) {
         return;
     }
     runJs(QString("setOfflineMode(%1);").arg(enabled && !folderPath.isEmpty() ? "true" : "false"));
+}
+
+void MapWidget::setElevationVisible(bool visible) {
+    m_elevationVisible = visible;
+    runJs(QString("setElevationVisible(%1, '%2', '%3');")
+        .arg(visible ? "true" : "false",
+             appTr("Висота", "Elevation"),
+             appTr("м", "m")));
 }
 
 void MapWidget::setBulkMarkers(const QVector<BulkMarker>& markers) {

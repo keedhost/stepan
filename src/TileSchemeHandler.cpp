@@ -30,5 +30,9 @@ void TileSchemeHandler::requestStarted(QWebEngineUrlRequestJob* job) {
         job->fail(QWebEngineUrlRequestJob::UrlNotFound);
         return;
     }
+    // map.html's elevation layer loads tiles with crossOrigin="anonymous" and
+    // reads their pixels back from a canvas (Terrarium height decoding), which
+    // the qrc:// page may only do if the response opts in to CORS.
+    job->setAdditionalResponseHeaders({{"Access-Control-Allow-Origin", "*"}});
     job->reply("image/png", file);
 }

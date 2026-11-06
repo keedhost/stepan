@@ -26,11 +26,37 @@
       z-index: 1000;
     }
     #status.visible { opacity: 1; }
+    #elevLegend {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.88);
+      color: #1a1a1a;
+      padding: 6px 8px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      font-family: sans-serif;
+      font-size: 11px;
+      z-index: 1000;
+      pointer-events: none;
+      display: none;
+      min-width: 150px;
+    }
+    #elevLegend .title { font-weight: bold; margin-bottom: 4px; }
+    #elevLegend .bar { height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.25); }
+    #elevLegend .range { display: flex; justify-content: space-between; margin-top: 2px; }
+    #elevLegend .cursor { margin-top: 5px; font-size: 12px; font-weight: bold; min-height: 15px; }
   </style>
 </head>
 <body>
 <div id="map"></div>
 <div id="status"></div>
+<div id="elevLegend">
+  <div class="title" id="elevTitle"></div>
+  <div class="bar" id="elevBar"></div>
+  <div class="range"><span id="elevMin"></span><span id="elevMax"></span></div>
+  <div class="cursor" id="elevCursor"></div>
+</div>
 <script src="qrc:/leaflet/leaflet.min.js"></script>
 <script>
 // Fix default marker icon paths for QRC loading
@@ -138,6 +164,7 @@ function refreshActiveLayer() {
 function setOfflineMode(enabled) {
   offlineMode = enabled;
   refreshActiveLayer();
+  if (elevVisible) elevLayer.redraw();   // refetch tiles from the new source
 }
 
 function showStatus(msg) {
@@ -213,6 +240,198 @@ function setBulkMarkers(arr) {
         map.fitBounds(group.getBounds().pad(0.15));
         showStatus(bulkMarkers.length + ' позначок');
     }
+}
+
+// ── Elevation heatmap ─────────────────────────────────────────────────────────
+// Source: AWS Terrain Tiles (Terrarium encoding, public, CORS-enabled):
+//   height_m = R*256 + G + B/256 - 32768
+// Each tile is decoded once into a Float32Array and kept while it's on screen,
+// so the adaptive color range can be recomputed and tiles recolored on every
+// pan/zoom without refetching, and the cursor readout is a plain array lookup.
+var ELEV_URL = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png';
+// Offline: downloaded via the offline maps dialog as type "elevation" and
+// served by TileSchemeHandler (which adds the CORS header canvas reads need).
+var ELEV_OFFLINE_URL = 'stepan-tile:///elevation/{z}/{x}/{y}.png';
+var ELEV_MAX_NATIVE_ZOOM = 15;
+var ELEV_TILE = 256;
+// Sea/bathymetry (Terrarium encodes ocean depth as negative heights) is left
+// transparent and excluded from the adaptive range — otherwise e.g. the Black
+// Sea's -2000 m floor squashes all of Ukraine's land into one color.
+var ELEV_SEA_LEVEL = 0;
+
+// Heat ramp: deep blue (low) → cyan → green → yellow → orange → red (high).
+var ELEV_STOPS = [
+  [0.00, [ 43,  60, 160]],
+  [0.20, [ 40, 150, 220]],
+  [0.40, [ 60, 180,  90]],
+  [0.60, [235, 225,  60]],
+  [0.80, [240, 140,  40]],
+  [1.00, [200,  30,  30]]
+];
+var elevLut = (function() {
+  var lut = new Uint8ClampedArray(256 * 3);
+  for (var i = 0; i < 256; i++) {
+    var t = i / 255, k = 1;
+    while (k < ELEV_STOPS.length - 1 && t > ELEV_STOPS[k][0]) k++;
+    var a = ELEV_STOPS[k - 1], b = ELEV_STOPS[k];
+    var f = (t - a[0]) / (b[0] - a[0]);
+    for (var c = 0; c < 3; c++) lut[i * 3 + c] = a[1][c] + (b[1][c] - a[1][c]) * f;
+  }
+  return lut;
+})();
+
+var elevTiles = {};          // key "z/x/y" → { elev: Float32Array, canvas, coords }
+var elevRange = null;        // { min, max } currently used for coloring
+var elevUnit  = 'м';
+var elevVisible = false;
+var elevRangeTimer = null;
+
+function elevKey(c) { return c.z + '/' + c.x + '/' + c.y; }
+
+function colorElevTile(t) {
+  if (!elevRange) return;
+  var ctx = t.canvas.getContext('2d');
+  var img = ctx.createImageData(ELEV_TILE, ELEV_TILE);
+  var d = img.data, e = t.elev;
+  var min = elevRange.min, span = Math.max(elevRange.max - elevRange.min, 1);
+  for (var i = 0, n = e.length; i < n; i++) {
+    var p = i * 4;
+    if (e[i] <= ELEV_SEA_LEVEL) { d[p + 3] = 0; continue; }   // water: let the base map show
+    var v = (e[i] - min) / span;
+    var idx = (v <= 0 ? 0 : v >= 1 ? 255 : (v * 255) | 0) * 3;
+    d[p] = elevLut[idx]; d[p + 1] = elevLut[idx + 1]; d[p + 2] = elevLut[idx + 2]; d[p + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+var ElevationLayer = L.GridLayer.extend({
+  createTile: function(coords, done) {
+    var canvas = L.DomUtil.create('canvas');
+    canvas.width = canvas.height = ELEV_TILE;
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    var self = this;
+    img.onload = function() {
+      var tmp = document.createElement('canvas');
+      tmp.width = tmp.height = ELEV_TILE;
+      var tctx = tmp.getContext('2d', { willReadFrequently: true });
+      tctx.drawImage(img, 0, 0);
+      var px = tctx.getImageData(0, 0, ELEV_TILE, ELEV_TILE).data;
+      var elev = new Float32Array(ELEV_TILE * ELEV_TILE);
+      for (var i = 0, p = 0; i < elev.length; i++, p += 4)
+        elev[i] = px[p] * 256 + px[p + 1] + px[p + 2] / 256 - 32768;
+      var t = { elev: elev, canvas: canvas, coords: coords };
+      elevTiles[elevKey(coords)] = t;
+      colorElevTile(t);
+      scheduleElevRange();
+      done(null, canvas);
+    };
+    img.onerror = function() { done(new Error('elevation tile failed'), canvas); };
+    img.src = L.Util.template(offlineMode ? ELEV_OFFLINE_URL : ELEV_URL,
+                              { z: coords.z, x: coords.x, y: coords.y });
+    return canvas;
+  }
+});
+
+var elevLayer = new ElevationLayer({
+  opacity: 0.6,
+  zIndex: 5,                         // above base layers, below markers
+  maxNativeZoom: ELEV_MAX_NATIVE_ZOOM,
+  maxZoom: 19,
+  attribution: 'Elevation: <a href="https://registry.opendata.aws/terrain-tiles/">AWS Terrain Tiles</a>'
+});
+elevLayer.on('tileunload', function(e) { delete elevTiles[elevKey(e.coords)]; });
+
+function elevNativeZoom() {
+  return Math.min(Math.round(map.getZoom()), ELEV_MAX_NATIVE_ZOOM);
+}
+
+// Elevation at a lat/lng from the loaded tiles, or null if not loaded yet.
+function elevAt(latlng) {
+  var z = elevNativeZoom();
+  var p = map.project(latlng, z);
+  var tx = Math.floor(p.x / ELEV_TILE), ty = Math.floor(p.y / ELEV_TILE);
+  var t = elevTiles[z + '/' + tx + '/' + ty];
+  if (!t) return null;
+  var px = Math.floor(p.x - tx * ELEV_TILE), py = Math.floor(p.y - ty * ELEV_TILE);
+  return t.elev[py * ELEV_TILE + px];
+}
+
+// Adaptive range: 2nd–98th percentile of elevations inside the visible area
+// (percentiles, not min/max, so a single spike or sea pixel doesn't flatten
+// the whole palette). Recolors on-screen tiles only when the range changed.
+function scheduleElevRange() {
+  clearTimeout(elevRangeTimer);
+  elevRangeTimer = setTimeout(updateElevRange, 150);
+}
+
+function updateElevRange() {
+  if (!elevVisible) return;
+  var z = elevNativeZoom();
+  var b = map.getPixelBounds();
+  var scale = map.getZoomScale(z, map.getZoom());
+  var vMin = b.min.multiplyBy(scale), vMax = b.max.multiplyBy(scale);
+  var samples = [];
+  Object.keys(elevTiles).forEach(function(k) {
+    var t = elevTiles[k];
+    if (t.coords.z !== z) return;
+    var ox = t.coords.x * ELEV_TILE, oy = t.coords.y * ELEV_TILE;
+    var x0 = Math.max(0, Math.floor(vMin.x - ox)), x1 = Math.min(ELEV_TILE, Math.ceil(vMax.x - ox));
+    var y0 = Math.max(0, Math.floor(vMin.y - oy)), y1 = Math.min(ELEV_TILE, Math.ceil(vMax.y - oy));
+    for (var y = y0; y < y1; y += 4)
+      for (var x = x0; x < x1; x += 4)
+        if (t.elev[y * ELEV_TILE + x] > ELEV_SEA_LEVEL) samples.push(t.elev[y * ELEV_TILE + x]);
+  });
+  if (samples.length < 16) return;
+  samples.sort(function(a, b) { return a - b; });
+  var lo = samples[Math.floor(samples.length * 0.02)];
+  var hi = samples[Math.min(samples.length - 1, Math.floor(samples.length * 0.98))];
+  if (hi - lo < 10) { var mid = (hi + lo) / 2; lo = mid - 5; hi = mid + 5; }
+  lo = Math.floor(lo); hi = Math.ceil(hi);
+  if (elevRange && elevRange.min === lo && elevRange.max === hi) return;
+  elevRange = { min: lo, max: hi };
+  Object.keys(elevTiles).forEach(function(k) { colorElevTile(elevTiles[k]); });
+  document.getElementById('elevMin').textContent = lo + ' ' + elevUnit;
+  document.getElementById('elevMax').textContent = hi + ' ' + elevUnit;
+}
+
+function onElevMouseMove(e) {
+  var h = elevAt(e.latlng);
+  document.getElementById('elevCursor').textContent =
+    h === null ? '' : '▸ ' + Math.round(h) + ' ' + elevUnit;
+}
+function onElevMouseOut() { document.getElementById('elevCursor').textContent = ''; }
+
+// Called from C++ (MapWidget::setElevationVisible). title/unit are localized.
+function setElevationVisible(visible, title, unit) {
+  elevUnit = unit || elevUnit;
+  document.getElementById('elevTitle').textContent = title || '';
+  if (visible === elevVisible) return;
+  elevVisible = visible;
+  var legend = document.getElementById('elevLegend');
+  if (visible) {
+    var grad = ELEV_STOPS.map(function(s) {
+      return 'rgb(' + s[1].join(',') + ') ' + (s[0] * 100) + '%';
+    }).join(',');
+    document.getElementById('elevBar').style.background = 'linear-gradient(to right,' + grad + ')';
+    document.getElementById('elevMin').textContent = '';
+    document.getElementById('elevMax').textContent = '';
+    elevRange = { min: 0, max: 500 };   // placeholder until first tiles arrive
+    legend.style.display = 'block';
+    elevLayer.addTo(map);
+    map.on('moveend', scheduleElevRange);
+    map.on('mousemove', onElevMouseMove);
+    map.on('mouseout', onElevMouseOut);
+  } else {
+    map.off('moveend', scheduleElevRange);
+    map.off('mousemove', onElevMouseMove);
+    map.off('mouseout', onElevMouseOut);
+    map.removeLayer(elevLayer);
+    elevTiles = {};
+    elevRange = null;
+    legend.style.display = 'none';
+    onElevMouseOut();
+  }
 }
 </script>
 </body>

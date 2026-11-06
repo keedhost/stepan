@@ -15,7 +15,7 @@ class TileDownloader : public QObject {
     Q_OBJECT
 public:
     struct Region {
-        QString typeKey;   // "streets" | "ortho" | "topo"
+        QString typeKey;   // "streets" | "ortho" | "topo" | "elevation"
         QString basePath;  // offline maps root folder
         double south = 0, west = 0, north = 0, east = 0;
         int minZoom = 1, maxZoom = 1;
