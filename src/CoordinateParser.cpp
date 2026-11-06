@@ -236,9 +236,11 @@ std::optional<CoordinateData> CoordinateParser::tryMGRS(const QString& input) {
 }
 
 std::optional<CoordinateData> CoordinateParser::tryUTM(const QString& input) {
-    // UTM: <zone 1-2 digits><N or S or band letter> <easting 6-7 digits> <northing 6-7 digits>
+    // UTM: <zone 1-2 digits><N or S or band letter> <easting 5-8 digits> <northing 1-8 digits>
+    // Northing may be short: just north of the equator it is a few metres
+    // ("37N 255144 55306"), and the app writes it that way.
     static const QRegularExpression re(
-        R"(^(\d{1,2})\s*([A-Za-z])\s+(\d{5,8}(?:\.\d+)?)\s+(\d{6,8}(?:\.\d+)?)$)"
+        R"(^(\d{1,2})\s*([A-Za-z])\s+(\d{5,8}(?:\.\d+)?)\s+(\d{1,8}(?:\.\d+)?)$)"
     );
     const auto match = re.match(input.trimmed());
     if (!match.hasMatch()) return std::nullopt;
@@ -250,14 +252,34 @@ std::optional<CoordinateData> CoordinateParser::tryUTM(const QString& input) {
 
     if (zone < 1 || zone > 60) return std::nullopt;
 
-    // Determine hemisphere: N=north (N..Z), everything else treated as south
-    const bool northp = (bandChar >= 'N');
+    // The letter is either the hemisphere or an MGRS latitude band:
+    //  - N / S are the hemisphere. That is how this app writes UTM ("56S …" is
+    //    Sydney), so its own output must read back. (N as a band, 0–8°N, is
+    //    north either way; S as a band, 32–40°N, is read as the hemisphere.)
+    //  - Other letters are latitude bands: C–M south, P–X north (no I/O). The
+    //    result is checked against the band, so a wrong letter or a wrong
+    //    northing is rejected instead of silently landing somewhere else.
+    //  - Anything else (A, B, I, O, Y, Z) is not valid UTM and is rejected.
+    static const QString kBands = QStringLiteral("CDEFGHJKLMNPQRSTUVWX");
+    const bool hemisphereLetter = (bandChar == 'N' || bandChar == 'S');
+    const int bandIdx = kBands.indexOf(bandChar);  // 0 = C (80°S … 72°S)
+    if (!hemisphereLetter && bandIdx < 0) return std::nullopt;
+    const bool northp = hemisphereLetter ? (bandChar == 'N') : (bandChar >= 'N');
 
     try {
         double lat, lon;
         GeographicLib::UTMUPS::Reverse(zone, northp, easting, northing, lat, lon);
 
         if (lat < -90.0 || lat > 90.0 || lon < -180.0 || lon > 180.0) return std::nullopt;
+
+        if (!hemisphereLetter) {
+            // Bands are 8° tall from 80°S; X is 12° (72–84°N). A little slack
+            // for points written with the neighbouring band at a boundary.
+            const double south = -80.0 + 8.0 * bandIdx;
+            const double north = (bandChar == 'X') ? 84.0 : south + 8.0;
+            const double slack = 0.5;
+            if (lat < south - slack || lat > north + slack) return std::nullopt;
+        }
 
         return buildFromLatLon(lat, lon, CoordinateFormat::UTM);
     } catch (...) {
