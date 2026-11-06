@@ -24,6 +24,7 @@
 #include "TrayManager.h"
 #include "CoordinateParser.h"
 #include "AppLocale.h"
+#include "version.h"
 #include <QApplication>
 #include <QCoreApplication>
 #include <QCommandLineParser>
@@ -104,7 +105,7 @@ static int runConsole(int argc, char* argv[]) {
 #endif
     QCoreApplication app(argc, argv);
     app.setApplicationName("Stepan");
-    app.setApplicationVersion("1.0.0");
+    app.setApplicationVersion(QString::fromLatin1(APP_VERSION_FULL));
 
     QCommandLineParser p;
     p.setApplicationDescription(
@@ -248,7 +249,7 @@ int main(int argc, char* argv[]) {
     app.setApplicationDisplayName("Степан");
     app.setOrganizationName("ss-education");
     app.setOrganizationDomain("ss-education.com.ua");
-    app.setApplicationVersion("1.0.0");
+    app.setApplicationVersion(QString::fromLatin1(APP_VERSION_FULL));
 
     appLangIsEnglish() = QSettings().value("language", "uk").toString() == "en";
     Theme::applyMode(Theme::savedMode());
