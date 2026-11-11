@@ -19,7 +19,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 cmake_minimum_required(VERSION 3.20)
-project(Stepan VERSION 0.5.0 LANGUAGES CXX)
+project(Stepan VERSION 0.5.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,7 +28,7 @@ set(CMAKE_AUTORCC ON)
 
 # ── Version & build info ───────────────────────────────────────────────────────
 # User-visible version (may include pre-release suffix); used in metadata/UI
-set(APP_VERSION_FULL "0.5.0")
+set(APP_VERSION_FULL "0.5.1")
 
 find_package(Git QUIET)
 if(GIT_FOUND)
