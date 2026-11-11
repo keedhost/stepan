@@ -41,6 +41,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
+#include <QSystemTrayIcon>
 
 SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     setWindowTitle(appTr("Налаштування", "Settings"));
@@ -95,6 +96,18 @@ SettingsDialog::SettingsDialog(QWidget* parent) : QDialog(parent) {
     trayForm->addRow(appTr("Іконка трею:", "Tray icon:"), m_trayIconStyle);
 
     generalLayout->addWidget(trayBox);
+
+    if (!QSystemTrayIcon::isSystemTrayAvailable()) {
+        const QString why = appTr(
+            "Системний трей недоступний: вікно не можна сховати, програма закривається разом із ним.",
+            "System tray is unavailable: the window cannot be hidden, closing it quits the app.");
+        for (QWidget* w : {static_cast<QWidget*>(m_startMinimized),
+                           static_cast<QWidget*>(m_disableCloseToTray),
+                           static_cast<QWidget*>(trayBox)}) {
+            w->setEnabled(false);
+            w->setToolTip(why);
+        }
+    }
 
     // ── Оформлення ────────────────────────────────────────────────────────────
     auto* themeBox  = new QGroupBox(appTr("Оформлення", "Appearance"), generalTab);

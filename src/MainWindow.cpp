@@ -49,6 +49,7 @@
 #include <QFont>
 #include <QSizePolicy>
 #include <QCloseEvent>
+#include <QSystemTrayIcon>
 #include <QEvent>
 #include <QPalette>
 #include <QMenuBar>
@@ -164,8 +165,19 @@ MainWindow::MainWindow(QWidget* parent)
     m_webServer = new WebServer(this);
     connect(m_webServer, &WebServer::started, this, &MainWindow::onWebServerStarted);
     connect(m_webServer, &WebServer::stopped, this, &MainWindow::onWebServerStopped);
-    connect(m_webServer, &WebServer::errorOccurred, this, [](const QString& msg) {
-        Q_UNUSED(msg)
+    connect(m_webServer, &WebServer::errorOccurred, this, [this](const QString& msg) {
+        // Queued so a failure during startup is shown once the window is up.
+        QTimer::singleShot(0, this, [this, msg]() {
+            const QSettings s;
+            showAppWarning(this, appTr("Веб-сервер", "Web server"),
+                QString(appTr("Не вдалося запустити веб-сервер на %1:%2.\n%3\n\n"
+                              "Змініть адресу або порт у Файл → Налаштування → Веб-інтерфейс.",
+                              "Could not start the web server on %1:%2.\n%3\n\n"
+                              "Change the address or port in File → Settings → Web Interface."))
+                    .arg(s.value("webAddress", "0.0.0.0").toString())
+                    .arg(s.value("webPort", 8080).toInt())
+                    .arg(msg));
+        });
     });
 
     applyWebSettings();
@@ -533,7 +545,11 @@ void MainWindow::setInputText(const QString& text) {
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-    if (QSettings().value("closeToTray", true).toBool()) {
+    // Hide only when there is a tray icon to bring the window back from.
+    // Without one (e.g. GNOME without the AppIndicator extension) the window
+    // would vanish while the process keeps running, so quit instead.
+    if (QSettings().value("closeToTray", true).toBool()
+        && QSystemTrayIcon::isSystemTrayAvailable()) {
         hide();
         event->ignore();
     } else {
@@ -567,7 +583,10 @@ void MainWindow::applyWebSettings() {
     if (enabled) {
         const QString addr = s.value("webAddress", "0.0.0.0").toString();
         const quint16 port = static_cast<quint16>(s.value("webPort", 8080).toInt());
-        if (!m_webServer->isRunning())
+        // Start, or restart when the address or port changed in Settings
+        // (start() stops a running server first).
+        if (!m_webServer->isRunning()
+            || m_webServer->boundHost() != addr || m_webServer->boundPort() != port)
             m_webServer->start(addr, port);
     } else {
         if (m_webServer->isRunning())

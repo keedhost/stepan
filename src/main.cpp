@@ -24,6 +24,7 @@
 #include "TrayManager.h"
 #include "CoordinateParser.h"
 #include "AppLocale.h"
+#include "AutoStart.h"
 #include "version.h"
 #include <QApplication>
 #include <QCoreApplication>
@@ -34,6 +35,7 @@
 #include <QList>
 #include <QPair>
 #include <QSettings>
+#include <QSystemTrayIcon>
 #include <QWebEngineUrlScheme>
 #ifdef Q_OS_WIN
 #  include <windows.h>
@@ -279,6 +281,11 @@ int main(int argc, char* argv[]) {
     clp.addPositionalArgument("координата", "Відкрити GUI з цією координатою.");
     clp.parse(app.arguments());
 
+    // Keep the autostart entry pointing at the current executable: an
+    // AppImage or a portable build may have been moved or replaced.
+    if (AutoStart::isSupported() && AutoStart::isEnabled())
+        AutoStart::setEnabled(true);
+
     MainWindow window;
 
     const QString initial = clp.isSet("open")
@@ -290,7 +297,9 @@ int main(int argc, char* argv[]) {
     if (!initial.isEmpty()) {
         window.setInputText(initial);
         window.show(); // always show when coordinate provided via CLI
-    } else if (!QSettings().value("startMinimized", false).toBool()) {
+    } else if (!QSettings().value("startMinimized", false).toBool()
+               || !QSystemTrayIcon::isSystemTrayAvailable()) {
+        // Without a system tray there is no way to open a hidden window.
         window.show();
     }
 

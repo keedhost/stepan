@@ -38,6 +38,10 @@ public:
     void    stop();
     bool    isRunning() const;
     quint16 actualPort() const;
+    // The address and port the running server was started with (empty / 0
+    // when stopped), so callers can tell whether settings changed.
+    QString boundHost() const { return m_host; }
+    quint16 boundPort() const { return m_port; }
 
     // Returns all URLs the server can be reached at given a bind address and port
     static QStringList listenUrls(const QString& boundAddress, quint16 port);
@@ -57,5 +61,14 @@ private:
     QByteArray  serve404();
 
     QTcpServer*                  m_server = nullptr;
-    QHash<QTcpSocket*, QByteArray> m_buffers;
+    QHash<QTcpSocket*, QByteArray> m_buffers;  // request bytes per open connection
+    QString                      m_host;
+    quint16                      m_port = 0;
+
+    // Limits against a client (anyone on the LAN when bound to 0.0.0.0)
+    // exhausting memory or connections: a request is a short GET, so its
+    // headers must fit in kMaxRequestBytes and arrive within kRequestTimeoutMs.
+    static constexpr int kMaxRequestBytes  = 8 * 1024;
+    static constexpr int kRequestTimeoutMs = 10 * 1000;
+    static constexpr int kMaxConnections   = 32;
 };

@@ -21,6 +21,7 @@
  */
 
 #include "WebServer.h"
+#include <QTimer>
 #include "CoordinateParser.h"
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -158,6 +159,8 @@ bool WebServer::start(const QString& host, quint16 port) {
         emit errorOccurred(msg);
         return false;
     }
+    m_host = host;
+    m_port = port;
     emit started(m_server->serverPort());
     return true;
 }
@@ -165,9 +168,11 @@ bool WebServer::start(const QString& host, quint16 port) {
 void WebServer::stop() {
     if (!m_server) return;
     m_server->close();
-    m_server->deleteLater();
+    m_server->deleteLater();   // also deletes the accepted sockets (its children)
     m_server = nullptr;
     m_buffers.clear();
+    m_host.clear();
+    m_port = 0;
     emit stopped();
 }
 
@@ -194,11 +199,36 @@ void WebServer::onNewConnection() {
     while (m_server && m_server->hasPendingConnections()) {
         QTcpSocket* socket = m_server->nextPendingConnection();
 
+        // Too many open connections: refuse instead of queueing more.
+        if (m_buffers.size() >= kMaxConnections) {
+            socket->write(respond(503, "text/plain", "Too Many Connections"));
+            socket->disconnectFromHost();
+            connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+            continue;
+        }
+        m_buffers.insert(socket, QByteArray());
+
+        // Drop connections that never finish their request (slowloris).
+        auto* timer = new QTimer(socket);
+        timer->setSingleShot(true);
+        connect(timer, &QTimer::timeout, socket, [socket]() { socket->abort(); });
+        timer->start(kRequestTimeoutMs);
+
         connect(socket, &QTcpSocket::readyRead, this, [this, socket]() {
-            m_buffers[socket] += socket->readAll();
-            if (m_buffers[socket].contains("\r\n\r\n")) {
-                const QByteArray req = m_buffers.take(socket);
+            auto it = m_buffers.find(socket);
+            if (it == m_buffers.end()) {        // request already answered
+                socket->readAll();
+                return;
+            }
+            it.value() += socket->readAll();
+            if (it.value().contains("\r\n\r\n")) {
+                const QByteArray req = it.value();
+                m_buffers.erase(it);
                 handleRequest(socket, req);
+            } else if (it.value().size() > kMaxRequestBytes) {
+                m_buffers.erase(it);
+                socket->write(respond(431, "text/plain", "Request Header Fields Too Large"));
+                socket->disconnectFromHost();
             }
         });
 
@@ -248,6 +278,9 @@ void WebServer::handleRequest(QTcpSocket* socket, const QByteArray& request) {
 QByteArray WebServer::respond(int status, const QByteArray& type, const QByteArray& body) {
     const QByteArray statusText = status == 200 ? "OK"
                                 : status == 404 ? "Not Found"
+                                : status == 405 ? "Method Not Allowed"
+                                : status == 431 ? "Request Header Fields Too Large"
+                                : status == 503 ? "Service Unavailable"
                                 : "Error";
     QByteArray r = "HTTP/1.1 " + QByteArray::number(status) + " " + statusText + "\r\n";
     r += "Content-Type: "   + type + "\r\n";

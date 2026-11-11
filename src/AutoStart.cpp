@@ -97,6 +97,30 @@ bool AutoStart::setEnabled(bool enable) {
 
 bool AutoStart::isSupported() { return true; }
 
+// Path of the program to launch. Inside an AppImage applicationFilePath()
+// is the temporary mount (/tmp/.mount_XXXX/...), gone after reboot; the
+// AppImage runtime exports the real file path in $APPIMAGE.
+static QString executablePath() {
+    const QString appImage = qEnvironmentVariable("APPIMAGE");
+    if (!appImage.isEmpty() && QFile::exists(appImage))
+        return appImage;
+    return QCoreApplication::applicationFilePath();
+}
+
+// Quote a path for the Exec key (Desktop Entry spec, "The Exec key"):
+// inside double quotes, " ` $ \ are backslash-escaped; then the string
+// value escaping doubles every backslash once more; % becomes %%.
+static QString quoteExec(const QString& path) {
+    QString q;
+    for (const QChar c : path) {
+        if (c == '"' || c == '`' || c == '$') q += "\\\\";
+        else if (c == '\\') q += "\\\\\\";
+        if (c == '%') q += '%';
+        q += c;
+    }
+    return '"' + q + '"';
+}
+
 static QString desktopPath() {
     return QDir::homePath() + "/.config/autostart/stepan.desktop";
 }
@@ -119,7 +143,7 @@ bool AutoStart::setEnabled(bool enable) {
     out << "Type=Application\n";
     out << "Name=Stepan\n";
     out << "Comment=Конвертер систем координат\n";
-    out << "Exec=" << QCoreApplication::applicationFilePath() << "\n";
+    out << "Exec=" << quoteExec(executablePath()) << "\n";
     out << "Icon=stepan\n";
     out << "Hidden=false\n";
     out << "NoDisplay=false\n";
